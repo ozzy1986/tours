@@ -13,6 +13,15 @@ class ToursIndexRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $category = $this->input('category');
+
+        if ($category !== null && ! is_array($category)) {
+            $this->merge(['category' => [$category]]);
+        }
+    }
+
     /** @return array<string, mixed> */
     public function rules(): array
     {

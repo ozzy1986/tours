@@ -47,6 +47,7 @@ class TourFilter
         }
 
         return match ($filters['sort'] ?? null) {
+            'newest' => $query->orderByDesc('published_at'),
             'price_asc' => $query->withMin('departures', 'price_cents')->orderBy('departures_min_price_cents'),
             'price_desc' => $query->withMin('departures', 'price_cents')->orderByDesc('departures_min_price_cents'),
             'duration_asc' => $query->orderBy('duration_days'),

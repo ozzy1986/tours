@@ -1,11 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import {
-  YandexMap,
-  YandexMapDefaultFeaturesLayer,
-  YandexMapDefaultSchemeLayer,
-  YandexMapFeature,
-} from 'vue-yandex-maps'
+import type { Component } from 'vue'
+import { computed, onMounted, ref, shallowRef } from 'vue'
 import { extractRouteCoordinates, routeCenter } from '@/lib/route'
 import type { RouteGeoJson } from '@/lib/types'
 
@@ -14,14 +9,24 @@ const props = defineProps<{
   height?: string
 }>()
 
-const mounted = ref(false)
-onMounted(() => {
-  mounted.value = true
+type YmapsComponents = {
+  YandexMap: Component
+  YandexMapDefaultSchemeLayer: Component
+  YandexMapDefaultFeaturesLayer: Component
+  YandexMapFeature: Component
+}
+
+const ymaps = shallowRef<YmapsComponents | null>(null)
+const ready = ref(false)
+
+onMounted(async () => {
+  ymaps.value = await import('vue-yandex-maps')
+  ready.value = true
 })
 
 const coordinates = computed(() => extractRouteCoordinates(props.route))
 const center = computed(() => routeCenter(coordinates.value))
-const hasKey = Boolean(import.meta.env.PUBLIC_YANDEX_MAPS_API_KEY)
+const hasKey = Boolean(import.meta.env.PUBLIC_ENV__PUBLIC_YANDEX_MAPS_API_KEY)
 </script>
 
 <template>
@@ -33,7 +38,7 @@ const hasKey = Boolean(import.meta.env.PUBLIC_YANDEX_MAPS_API_KEY)
       v-if="!hasKey"
       class="flex h-full items-center justify-center px-4 text-center text-sm text-muted"
     >
-      Укажите PUBLIC_YANDEX_MAPS_API_KEY для отображения карты маршрута.
+      Укажите PUBLIC_ENV__PUBLIC_YANDEX_MAPS_API_KEY для отображения карты маршрута.
     </p>
     <p
       v-else-if="!coordinates.length"
@@ -41,8 +46,9 @@ const hasKey = Boolean(import.meta.env.PUBLIC_YANDEX_MAPS_API_KEY)
     >
       Маршрут для этого тура пока не добавлен.
     </p>
-    <YandexMap
-      v-else-if="mounted"
+    <component
+      v-else-if="ready && ymaps"
+      :is="ymaps.YandexMap"
       :settings="{
         location: {
           center: center,
@@ -51,10 +57,11 @@ const hasKey = Boolean(import.meta.env.PUBLIC_YANDEX_MAPS_API_KEY)
       }"
       class="h-full w-full"
     >
-      <YandexMapDefaultSchemeLayer />
-      <YandexMapDefaultFeaturesLayer />
-      <YandexMapFeature
+      <component :is="ymaps.YandexMapDefaultSchemeLayer" />
+      <component :is="ymaps.YandexMapDefaultFeaturesLayer" />
+      <component
         v-if="coordinates.length > 1"
+        :is="ymaps.YandexMapFeature"
         :settings="{
           geometry: {
             type: 'LineString',
@@ -65,7 +72,7 @@ const hasKey = Boolean(import.meta.env.PUBLIC_YANDEX_MAPS_API_KEY)
           },
         }"
       />
-    </YandexMap>
+    </component>
     <div
       v-else
       class="flex h-full items-center justify-center text-sm text-muted"

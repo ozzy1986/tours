@@ -10,7 +10,10 @@ use App\Http\Resources\TourSummaryResource;
 use App\Models\Tour;
 use App\Services\Embeddings\EmbeddingsClient;
 use App\Services\Embeddings\EmbeddingsException;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class SearchController extends Controller
 {
@@ -21,11 +24,20 @@ class SearchController extends Controller
 
         try {
             $vectors = $client->embed([$query], prefix: 'query');
-        } catch (EmbeddingsException $e) {
+        } catch (EmbeddingsException) {
             return response()->json([
                 'message' => 'Semantic search is temporarily unavailable. Try filter-based search instead.',
-                'fallback' => $this->fallbackResults($query, $limit),
+                'fallback' => $this->resolveSummaries($this->keywordSearch($query, $limit)),
             ], 503);
+        }
+
+        if (! $this->supportsVectorSearch()) {
+            $tours = $this->keywordSearch($query, $limit);
+
+            return response()->json([
+                'data' => $this->resolveSummaries($tours),
+                'meta' => ['query' => $query, 'mode' => 'keyword', 'count' => $tours->count()],
+            ]);
         }
 
         $tours = Tour::query()
@@ -36,26 +48,40 @@ class SearchController extends Controller
             ->get();
 
         return response()->json([
-            'data' => TourSummaryResource::collection($tours)->resolve(),
+            'data' => $this->resolveSummaries($tours),
             'meta' => ['query' => $query, 'mode' => 'semantic', 'count' => $tours->count()],
         ]);
     }
 
-    /** @return array<int, array<string, mixed>> */
-    private function fallbackResults(string $query, int $limit): array
+    private function supportsVectorSearch(): bool
     {
-        $tours = Tour::query()
+        return Schema::getConnection()->getDriverName() === 'pgsql'
+            && Schema::hasColumn('tours', 'embedding');
+    }
+
+    /** @return Collection<int, Tour> */
+    private function keywordSearch(string $query, int $limit): Collection
+    {
+        $operator = DB::connection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
+
+        return Tour::query()
             ->published()
             ->with(['categories', 'photos' => fn ($q) => $q->orderBy('position')->limit(1), 'departures'])
-            ->where(function ($q) use ($query) {
-                $q->where('title', 'ilike', "%{$query}%")
-                    ->orWhere('summary', 'ilike', "%{$query}%")
-                    ->orWhere('description', 'ilike', "%{$query}%");
+            ->where(function ($q) use ($query, $operator) {
+                $q->where('title', $operator, "%{$query}%")
+                    ->orWhere('summary', $operator, "%{$query}%")
+                    ->orWhere('description', $operator, "%{$query}%");
             })
             ->orderByDesc('published_at')
             ->limit($limit)
             ->get();
+    }
 
+    /** @param  Collection<int, Tour>  $tours
+     * @return array<int, array<string, mixed>>
+     */
+    private function resolveSummaries(Collection $tours): array
+    {
         return TourSummaryResource::collection($tours)->resolve();
     }
 }

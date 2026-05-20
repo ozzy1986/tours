@@ -1,5 +1,7 @@
 <?php
 
+/** Dummy tour seed data (25 tours). Regenerate JSON: php database/seeders/data/build_tours_json.php */
+
 /** @return list<array<string, mixed>> */
 return [
     [

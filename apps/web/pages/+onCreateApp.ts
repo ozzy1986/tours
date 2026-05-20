@@ -7,7 +7,7 @@ export async function onCreateApp(pageContext: PageContext) {
 
   const { app } = pageContext
   const { createYmaps } = await import('vue-yandex-maps')
-  const apikey = import.meta.env.PUBLIC_YANDEX_MAPS_API_KEY ?? ''
+  const apikey = import.meta.env.PUBLIC_ENV__PUBLIC_YANDEX_MAPS_API_KEY ?? ''
 
   app.use(
     createYmaps({

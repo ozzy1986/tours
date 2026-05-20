@@ -4,12 +4,12 @@ import { Calendar, ChevronLeft, ChevronRight, Clock } from 'lucide-vue-next'
 import { computed, defineAsyncComponent } from 'vue'
 import { useData } from 'vike-vue/useData'
 import PriceBadge from '@/components/PriceBadge.vue'
+import { formatDate, formatDuration, formatPrice } from '@/lib/format'
 
 const YandexRouteMap = defineAsyncComponent({
   loader: () => import('@/components/YandexRouteMap.vue'),
   ssr: false,
 })
-import { formatDate, formatDuration, formatPrice } from '@/lib/format'
 import type { Data } from './+data'
 
 const { tour } = useData<Data>()

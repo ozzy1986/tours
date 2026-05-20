@@ -13,10 +13,12 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
+use Filament\Pages\Concerns\InteractsWithFormActions;
 use Filament\Pages\Page;
 
 class LlmSettingsPage extends Page implements HasForms
 {
+    use InteractsWithFormActions;
     use InteractsWithForms;
 
     protected static ?string $navigationIcon = 'heroicon-o-sparkles';
@@ -28,6 +30,8 @@ class LlmSettingsPage extends Page implements HasForms
     protected static ?string $navigationGroup = 'Система';
 
     protected static ?int $navigationSort = 90;
+
+    protected static ?string $slug = 'llm-settings';
 
     protected static string $view = 'filament.pages.llm-settings';
 

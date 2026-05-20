@@ -7,7 +7,7 @@
     "dev": "vike dev --port 3000 --host",
     "build": "vike build",
     "preview": "vike preview --port 3000",
-    "test": "vitest"
+    "test": "vitest run"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.0.0",

@@ -49,3 +49,48 @@ it('lists categories', function () {
         ->assertOk()
         ->assertJsonCount(5, 'data');
 });
+
+it('excludes unpublished tours', function () {
+    Tour::withoutEvents(fn () => Tour::factory()->create([
+        'slug' => 'draft-tour',
+        'published_at' => null,
+    ]));
+
+    $this->getJson('/api/tours')
+        ->assertOk()
+        ->assertJsonCount(0, 'data');
+});
+
+it('filters by a single category query param', function () {
+    $cat = Category::where('slug', 'beach')->first();
+    Tour::withoutEvents(fn () => Tour::factory()->create([
+        'slug' => 'beach-tour',
+        'published_at' => now(),
+    ]))->categories()->attach($cat);
+
+    Tour::withoutEvents(fn () => Tour::factory()->create([
+        'slug' => 'other-tour',
+        'published_at' => now(),
+    ]))->categories()->attach(Category::where('slug', 'city')->first());
+
+    $this->getJson('/api/tours?category=beach')
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.slug', 'beach-tour');
+});
+
+it('returns featured tours', function () {
+    Tour::withoutEvents(fn () => Tour::factory()->count(2)->create([
+        'published_at' => now(),
+    ]));
+
+    $this->getJson('/api/tours/featured')
+        ->assertOk()
+        ->assertJsonCount(2, 'data');
+});
+
+it('returns 404 for unknown tour slug', function () {
+    $this->getJson('/api/tours/unknown-slug')
+        ->assertNotFound()
+        ->assertJsonPath('message', 'Tour not found');
+});

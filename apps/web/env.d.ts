@@ -2,7 +2,7 @@
 
 interface ImportMetaEnv {
   readonly PUBLIC_API_URL?: string
-  readonly PUBLIC_YANDEX_MAPS_API_KEY?: string
+  readonly PUBLIC_ENV__PUBLIC_YANDEX_MAPS_API_KEY?: string
 }
 
 interface ImportMeta {

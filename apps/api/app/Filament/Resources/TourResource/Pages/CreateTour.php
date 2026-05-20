@@ -10,6 +10,7 @@ use App\Models\LlmSetting;
 use App\Services\Llm\LlmException;
 use App\Services\Llm\TourGenerator;
 use Filament\Actions;
+use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Str;
@@ -29,15 +30,15 @@ class CreateTour extends CreateRecord
                 ->modalHeading('Генерация тура через LLM')
                 ->modalDescription('Опишите желаемый тур. Поля формы будут заполнены черновиком — проверьте и сохраните.')
                 ->form([
-                    \Filament\Forms\Components\Textarea::make('prompt')
+                    Forms\Components\Textarea::make('prompt')
                         ->label('Промпт')
                         ->required()
                         ->rows(4)
                         ->placeholder('Например: 7 дней, Байкал, треккинг, июль'),
-                    \Filament\Forms\Components\Select::make('category_hint')
+                    Forms\Components\Select::make('category_hint')
                         ->label('Категория (подсказка)')
                         ->options(Category::query()->pluck('name', 'slug')),
-                    \Filament\Forms\Components\TextInput::make('duration_days')
+                    Forms\Components\TextInput::make('duration_days')
                         ->label('Длительность (дней)')
                         ->numeric()
                         ->minValue(1)
