@@ -1,0 +1,14 @@
+---
+description: Commit and push to GitHub after completing user-requested work
+alwaysApply: true
+---
+
+# Git workflow
+
+After finishing a user task that changed the repo:
+
+1. Run `git status` and include all relevant changes (no `.env` or secrets).
+2. Commit with a clear English message describing why.
+3. Push to `origin` on the current branch (`git push -u origin HEAD` if no upstream).
+
+Do this in the same session before reporting done, unless the user asked not to push or there is nothing to commit.
