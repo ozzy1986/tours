@@ -1,0 +1,32 @@
+{
+  "name": "@tours/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vike dev --port 3000 --host",
+    "build": "vike build",
+    "preview": "vike preview --port 3000",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.0.0",
+    "embla-carousel-vue": "^8.3.0",
+    "lucide-vue-next": "^0.460.0",
+    "tailwindcss": "^4.0.0",
+    "vike": "^0.4.232",
+    "vike-vue": "^0.9.11",
+    "vue": "^3.5.13",
+    "vue-yandex-maps": "^3.0.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "@vue/test-utils": "^2.4.6",
+    "happy-dom": "^15.11.6",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.0",
+    "vitest": "^2.1.6",
+    "vue-tsc": "^2.1.10"
+  }
+}

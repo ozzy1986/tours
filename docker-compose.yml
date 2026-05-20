@@ -1,0 +1,74 @@
+# Docker compose for reproducible local/CI environment.
+# Local dev on Windows defaults to Laragon, this is for CI and "git clone && make up".
+
+services:
+  db:
+    image: pgvector/pgvector:pg15
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: tours
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d tours"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  embeddings:
+    build:
+      context: ./services/embeddings
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      HOST: 0.0.0.0
+      PORT: 8001
+    volumes:
+      - models-cache:/root/.cache/huggingface
+
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: ../../docker/Dockerfile.api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      embeddings:
+        condition: service_started
+    environment:
+      APP_ENV: local
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: tours
+      DB_USERNAME: postgres
+      DB_PASSWORD: root
+      EMBEDDINGS_URL: http://embeddings:8001
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./apps/api:/var/www/html
+
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: ../../docker/Dockerfile.web
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      PUBLIC_API_URL: http://api:8000
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./apps/web:/app
+
+volumes:
+  db-data:
+  models-cache:

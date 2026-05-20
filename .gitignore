@@ -1,0 +1,65 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Laravel
+apps/api/vendor/
+apps/api/node_modules/
+apps/api/storage/*.key
+apps/api/storage/app/public/*
+!apps/api/storage/app/public/.gitkeep
+apps/api/storage/framework/cache/data/
+apps/api/storage/framework/sessions/
+apps/api/storage/framework/testing/
+apps/api/storage/framework/views/
+apps/api/storage/logs/
+apps/api/storage/debugbar/
+apps/api/storage/pail/
+apps/api/bootstrap/cache/*
+!apps/api/bootstrap/cache/.gitignore
+apps/api/public/build/
+apps/api/public/hot
+apps/api/public/storage
+apps/api/.phpunit.cache/
+apps/api/.phpunit.result.cache
+apps/api/coverage/
+
+# Vike / Node
+apps/web/node_modules/
+apps/web/dist/
+apps/web/.vike/
+apps/web/coverage/
+apps/web/playwright-report/
+apps/web/test-results/
+apps/web/.vite/
+
+# Python
+services/embeddings/.venv/
+services/embeddings/__pycache__/
+services/embeddings/**/__pycache__/
+services/embeddings/.pytest_cache/
+services/embeddings/.mypy_cache/
+services/embeddings/models/
+
+# Docker volumes
+docker/data/

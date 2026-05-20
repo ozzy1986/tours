@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: tours_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d tours_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_pgsql
+      - name: Install API deps
+        working-directory: apps/api
+        run: composer install --no-interaction --prefer-dist
+      - name: Configure env
+        working-directory: apps/api
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          echo "DB_CONNECTION=pgsql" >> .env
+          echo "DB_HOST=127.0.0.1" >> .env
+          echo "DB_DATABASE=tours_test" >> .env
+          echo "DB_USERNAME=postgres" >> .env
+          echo "DB_PASSWORD=postgres" >> .env
+      - name: Migrate
+        working-directory: apps/api
+        run: |
+          PGPASSWORD=postgres psql -h 127.0.0.1 -U postgres -d tours_test -c "CREATE EXTENSION IF NOT EXISTS vector;"
+          php artisan migrate --force
+      - name: Pest
+        working-directory: apps/api
+        run: ./vendor/bin/pest
+
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+        working-directory: apps/web
+      - run: npm run build
+        working-directory: apps/web
+
+  embeddings:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt
+        working-directory: services/embeddings
+      - run: pytest
+        working-directory: services/embeddings
