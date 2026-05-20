@@ -6,11 +6,12 @@ import { useData } from 'vike-vue/useData'
 import PriceBadge from '@/components/PriceBadge.vue'
 import { formatDate, formatDuration, formatPrice } from '@/lib/format'
 
+import type { Data } from './+data'
+
 const YandexRouteMap = defineAsyncComponent({
   loader: () => import('@/components/YandexRouteMap.vue'),
   ssr: false,
 })
-import type { Data } from './+data'
 
 const { tour } = useData<Data>()
 

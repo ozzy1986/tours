@@ -30,7 +30,7 @@ defineProps<{
       </div>
       <div
         v-if="tour.min_price_cents != null"
-        class="absolute bottom-3 left-3 rounded-lg bg-surface-elevated/95 px-2.5 py-1 shadow-sm backdrop-blur"
+        class="absolute bottom-3 left-3 inline-flex items-baseline gap-1 rounded-lg bg-surface-elevated/95 px-2.5 py-1 shadow-sm backdrop-blur"
       >
         <span class="text-xs text-muted">от</span>
         <PriceBadge :cents="tour.min_price_cents" :currency="tour.currency" size="sm" />
@@ -52,7 +52,7 @@ defineProps<{
           {{ formatDuration(tour.duration_days) }}
         </span>
         <span
-          v-for="cat in tour.categories.slice(0, 2)"
+          v-for="cat in (tour.categories ?? []).slice(0, 2)"
           :key="cat.id"
           class="rounded-full bg-primary-muted px-2.5 py-0.5 text-xs font-medium text-primary"
         >

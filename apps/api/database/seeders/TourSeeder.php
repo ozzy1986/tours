@@ -11,8 +11,6 @@ use App\Models\TourPhoto;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Str;
-
 class TourSeeder extends Seeder
 {
     public function run(): void
@@ -34,6 +32,14 @@ class TourSeeder extends Seeder
             $slug = (string) $row['slug'];
             $waypoints = $row['route_waypoints'] ?? [];
             $geojson = $this->waypointsToGeoJson($waypoints);
+            $photos = array_values(array_filter(
+                (array) ($row['photos'] ?? []),
+                fn ($p) => is_string($p) && $p !== '',
+            ));
+            $cover = (string) ($row['cover_url'] ?? ($photos[0] ?? ''));
+            if ($cover === '' && $photos !== []) {
+                $cover = $photos[0];
+            }
 
             $tour = Tour::updateOrCreate(
                 ['slug' => $slug],
@@ -43,7 +49,7 @@ class TourSeeder extends Seeder
                     'description' => $row['description'],
                     'duration_days' => (int) $row['duration_days'],
                     'route_geojson' => $geojson,
-                    'cover_url' => $row['cover_url'] ?? null,
+                    'cover_url' => $cover !== '' ? $cover : null,
                     'meta_title' => $row['meta_title'] ?? $row['title'],
                     'meta_description' => $row['meta_description'] ?? $row['summary'],
                     'published_at' => Carbon::parse($row['published_at'] ?? 'now'),
@@ -59,11 +65,11 @@ class TourSeeder extends Seeder
             $tour->categories()->sync($ids);
 
             $tour->photos()->delete();
-            foreach ((array) ($row['photos'] ?? []) as $i => $photo) {
+            foreach ($photos as $i => $url) {
                 TourPhoto::create([
                     'tour_id' => $tour->id,
-                    'url' => is_string($photo) ? $photo : $photo['url'],
-                    'alt' => is_array($photo) ? ($photo['alt'] ?? $tour->title) : $tour->title,
+                    'url' => $url,
+                    'alt' => $tour->title,
                     'position' => $i,
                 ]);
             }

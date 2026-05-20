@@ -2,8 +2,10 @@
 
 /** Dummy tour seed data (25 tours). Regenerate JSON: php database/seeders/data/build_tours_json.php */
 
-/** @return list<array<string, mixed>> */
-return [
+require_once __DIR__ . '/tour_images_helper.php';
+
+/** @var list<array<string, mixed>> $tours */
+$tours = [
     [
         'slug' => 'baikal-winter',
         'title' => 'Зимний Байкал: лёд и Ольхон',
@@ -435,3 +437,5 @@ return [
         ],
     ],
 ];
+
+return assign_tour_images($tours);

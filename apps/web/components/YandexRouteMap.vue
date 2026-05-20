@@ -16,17 +16,33 @@ type YmapsComponents = {
   YandexMapFeature: Component
 }
 
+const apikey = (import.meta.env.PUBLIC_ENV__PUBLIC_YANDEX_MAPS_API_KEY ?? '').trim()
+const hasKey = Boolean(apikey)
+
 const ymaps = shallowRef<YmapsComponents | null>(null)
 const ready = ref(false)
 
 onMounted(async () => {
-  ymaps.value = await import('vue-yandex-maps')
-  ready.value = true
+  if (!hasKey) return
+
+  try {
+    const mod = await import('vue-yandex-maps')
+    mod.createYmapsOptions({ apikey, lang: 'ru_RU' }, true)
+    await mod.initYmaps()
+    ymaps.value = {
+      YandexMap: mod.YandexMap,
+      YandexMapDefaultSchemeLayer: mod.YandexMapDefaultSchemeLayer,
+      YandexMapDefaultFeaturesLayer: mod.YandexMapDefaultFeaturesLayer,
+      YandexMapFeature: mod.YandexMapFeature,
+    }
+    ready.value = true
+  } catch {
+    ready.value = false
+  }
 })
 
 const coordinates = computed(() => extractRouteCoordinates(props.route))
 const center = computed(() => routeCenter(coordinates.value))
-const hasKey = Boolean(import.meta.env.PUBLIC_ENV__PUBLIC_YANDEX_MAPS_API_KEY)
 </script>
 
 <template>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Filter, X } from 'lucide-vue-next'
-import { ref, watch } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { navigate } from 'vike/client/router'
 import { useData } from 'vike-vue/useData'
 import TourCard from '@/components/TourCard.vue'
@@ -16,6 +16,11 @@ const filters = ref<TourFiltersState>({
   category: [...data.filters.category],
 })
 const sheetOpen = ref(false)
+const teleportReady = ref(false)
+
+onMounted(() => {
+  teleportReady.value = true
+})
 
 watch(
   () => data.filters,
@@ -98,7 +103,7 @@ async function goToPage(page: number) {
         >
           <button
             type="button"
-            class="rounded-lg border border-border px-3 py-2 text-sm disabled:opacity-40"
+            class="cursor-pointer rounded-lg border border-border px-3 py-2 text-sm transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-border disabled:hover:text-inherit"
             :disabled="data.result.meta.current_page <= 1"
             @click="goToPage(data.result.meta.current_page - 1)"
           >
@@ -109,7 +114,7 @@ async function goToPage(page: number) {
           </span>
           <button
             type="button"
-            class="rounded-lg border border-border px-3 py-2 text-sm disabled:opacity-40"
+            class="cursor-pointer rounded-lg border border-border px-3 py-2 text-sm transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-border disabled:hover:text-inherit"
             :disabled="data.result.meta.current_page >= data.result.meta.last_page"
             @click="goToPage(data.result.meta.current_page + 1)"
           >
@@ -119,7 +124,7 @@ async function goToPage(page: number) {
       </div>
     </div>
 
-    <Teleport to="body">
+    <Teleport v-if="teleportReady" to="body">
       <div
         v-if="sheetOpen"
         class="fixed inset-0 z-50 lg:hidden"
