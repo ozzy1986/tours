@@ -31,12 +31,13 @@ class CategoryResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\TextInput::make('name')->required()->maxLength(120),
-            Forms\Components\TextInput::make('slug')->required()->maxLength(80)->unique(ignoreRecord: true),
+            Forms\Components\TextInput::make('name')->label('Название')->required()->maxLength(120),
+            Forms\Components\TextInput::make('slug')->label('URL-адрес')->required()->maxLength(80)->unique(ignoreRecord: true),
             Forms\Components\TextInput::make('icon')
+                ->label('Иконка')
                 ->maxLength(40)
                 ->helperText('Иконка Lucide, например sun, mountain'),
-            Forms\Components\TextInput::make('position')->numeric()->default(0),
+            Forms\Components\TextInput::make('position')->label('Порядок')->numeric()->default(0),
         ]);
     }
 
@@ -44,10 +45,10 @@ class CategoryResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('position')->sortable(),
-                Tables\Columns\TextColumn::make('name')->searchable(),
-                Tables\Columns\TextColumn::make('slug'),
-                Tables\Columns\TextColumn::make('tours_count')->counts('tours'),
+                Tables\Columns\TextColumn::make('position')->label('Порядок')->sortable(),
+                Tables\Columns\TextColumn::make('name')->label('Название')->searchable(),
+                Tables\Columns\TextColumn::make('slug')->label('URL'),
+                Tables\Columns\TextColumn::make('tours_count')->label('Туров')->counts('tours'),
             ])
             ->defaultSort('position')
             ->actions([

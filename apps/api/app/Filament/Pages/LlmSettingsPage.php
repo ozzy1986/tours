@@ -61,10 +61,11 @@ class LlmSettingsPage extends Page implements HasForms
                     ->schema([
                         Forms\Components\Toggle::make('enabled')->label('Включить LLM-генерацию'),
                         Forms\Components\Select::make('provider')
+                            ->label('Провайдер')
                             ->options([
                                 'openai' => 'OpenAI',
                                 'ollama' => 'Ollama (локально)',
-                                'custom' => 'Custom',
+                                'custom' => 'Другой',
                             ])
                             ->required(),
                         Forms\Components\TextInput::make('base_url')
@@ -78,15 +79,18 @@ class LlmSettingsPage extends Page implements HasForms
                             ->revealable()
                             ->helperText('Оставьте ******** чтобы не менять существующий ключ'),
                         Forms\Components\TextInput::make('model')
+                            ->label('Модель')
                             ->required()
                             ->default('gpt-4o-mini'),
                         Forms\Components\TextInput::make('temperature')
+                            ->label('Температура')
                             ->numeric()
                             ->minValue(0)
                             ->maxValue(2)
                             ->step(0.1)
                             ->default(0.7),
                         Forms\Components\TextInput::make('max_tokens')
+                            ->label('Макс. токенов')
                             ->numeric()
                             ->minValue(256)
                             ->maxValue(8192)

@@ -16,12 +16,16 @@ class PhotosRelationManager extends RelationManager
 
     protected static ?string $title = 'Фотоальбом';
 
+    protected static ?string $modelLabel = 'фото';
+
+    protected static ?string $pluralModelLabel = 'фотографии';
+
     public function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\TextInput::make('url')->url()->required()->columnSpanFull(),
-            Forms\Components\TextInput::make('alt')->maxLength(255),
-            Forms\Components\TextInput::make('position')->numeric()->default(0),
+            Forms\Components\TextInput::make('url')->label('URL изображения')->url()->required()->columnSpanFull(),
+            Forms\Components\TextInput::make('alt')->label('Подпись (alt)')->maxLength(255),
+            Forms\Components\TextInput::make('position')->label('Порядок')->numeric()->default(0),
         ]);
     }
 
@@ -29,9 +33,9 @@ class PhotosRelationManager extends RelationManager
     {
         return $table
             ->columns([
-                Tables\Columns\ImageColumn::make('url')->height(48),
-                Tables\Columns\TextColumn::make('alt'),
-                Tables\Columns\TextColumn::make('position')->sortable(),
+                Tables\Columns\ImageColumn::make('url')->label('Фото')->height(48),
+                Tables\Columns\TextColumn::make('alt')->label('Подпись'),
+                Tables\Columns\TextColumn::make('position')->label('Порядок')->sortable(),
             ])
             ->reorderable('position')
             ->headerActions([Tables\Actions\CreateAction::make()])

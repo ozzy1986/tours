@@ -58,22 +58,42 @@ class TourResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\Tabs::make('Tour')->tabs([
+            Forms\Components\Tabs::make('Тур')->tabs([
                 Forms\Components\Tabs\Tab::make('Основное')->schema([
                     Forms\Components\TextInput::make('title')
+                        ->label('Название')
                         ->required()
                         ->live(onBlur: true)
                         ->afterStateUpdated(fn ($state, callable $set) => $set('slug', Str::slug($state))),
-                    Forms\Components\TextInput::make('slug')->required()->unique(ignoreRecord: true),
-                    Forms\Components\Textarea::make('summary')->required()->rows(3)->maxLength(500),
-                    Forms\Components\MarkdownEditor::make('description')->required()->columnSpanFull(),
-                    Forms\Components\TextInput::make('duration_days')->numeric()->required()->minValue(1)->maxValue(30),
+                    Forms\Components\TextInput::make('slug')
+                        ->label('URL-адрес')
+                        ->required()
+                        ->unique(ignoreRecord: true),
+                    Forms\Components\Textarea::make('summary')
+                        ->label('Краткое описание')
+                        ->required()
+                        ->rows(3)
+                        ->maxLength(500),
+                    Forms\Components\MarkdownEditor::make('description')
+                        ->label('Полное описание')
+                        ->required()
+                        ->columnSpanFull(),
+                    Forms\Components\TextInput::make('duration_days')
+                        ->label('Длительность (дней)')
+                        ->numeric()
+                        ->required()
+                        ->minValue(1)
+                        ->maxValue(30),
                     Forms\Components\Select::make('categories')
+                        ->label('Категории')
                         ->relationship('categories', 'name')
                         ->multiple()
                         ->preload(),
-                    Forms\Components\TextInput::make('cover_url')->url()->label('Обложка (URL)'),
-                    Forms\Components\DateTimePicker::make('published_at')->label('Опубликован'),
+                    Forms\Components\TextInput::make('cover_url')
+                        ->label('Обложка (URL)')
+                        ->url(),
+                    Forms\Components\DateTimePicker::make('published_at')
+                        ->label('Дата публикации'),
                 ])->columns(2),
                 Forms\Components\Tabs\Tab::make('Маршрут')->schema([
                     Forms\Components\Textarea::make('route_geojson')
@@ -92,8 +112,13 @@ class TourResource extends Resource
                         ->helperText('LineString + waypoints. Генерация LLM заполняет автоматически.'),
                 ]),
                 Forms\Components\Tabs\Tab::make('SEO')->schema([
-                    Forms\Components\TextInput::make('meta_title')->maxLength(120),
-                    Forms\Components\Textarea::make('meta_description')->maxLength(500)->rows(3),
+                    Forms\Components\TextInput::make('meta_title')
+                        ->label('SEO-заголовок')
+                        ->maxLength(120),
+                    Forms\Components\Textarea::make('meta_description')
+                        ->label('SEO-описание')
+                        ->maxLength(500)
+                        ->rows(3),
                 ]),
             ])->columnSpanFull(),
         ]);
@@ -103,12 +128,12 @@ class TourResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\ImageColumn::make('cover_url')->label('')->circular(),
-                Tables\Columns\TextColumn::make('title')->searchable()->limit(40),
+                Tables\Columns\ImageColumn::make('cover_url')->label('Фото')->circular(),
+                Tables\Columns\TextColumn::make('title')->label('Название')->searchable()->limit(40),
                 Tables\Columns\TextColumn::make('duration_days')->label('Дней')->sortable(),
-                Tables\Columns\TextColumn::make('categories.name')->badge(),
-                Tables\Columns\IconColumn::make('published_at')->label('Live')->boolean(),
-                Tables\Columns\TextColumn::make('updated_at')->dateTime()->sortable(),
+                Tables\Columns\TextColumn::make('categories.name')->label('Категории')->badge(),
+                Tables\Columns\IconColumn::make('published_at')->label('Опубликован')->boolean(),
+                Tables\Columns\TextColumn::make('updated_at')->label('Обновлён')->dateTime('d.m.Y H:i')->sortable(),
             ])
             ->filters([
                 Tables\Filters\TernaryFilter::make('published_at')
