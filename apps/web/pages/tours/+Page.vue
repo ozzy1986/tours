@@ -103,7 +103,7 @@ async function goToPage(page: number) {
         >
           <button
             type="button"
-            class="cursor-pointer rounded-lg border border-border px-3 py-2 text-sm transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-border disabled:hover:text-inherit"
+            class="rounded-lg border border-border px-3 py-2 text-sm transition hover:border-primary hover:text-primary disabled:opacity-40 disabled:hover:border-border disabled:hover:text-inherit"
             :disabled="data.result.meta.current_page <= 1"
             @click="goToPage(data.result.meta.current_page - 1)"
           >
@@ -114,7 +114,7 @@ async function goToPage(page: number) {
           </span>
           <button
             type="button"
-            class="cursor-pointer rounded-lg border border-border px-3 py-2 text-sm transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-border disabled:hover:text-inherit"
+            class="rounded-lg border border-border px-3 py-2 text-sm transition hover:border-primary hover:text-primary disabled:opacity-40 disabled:hover:border-border disabled:hover:text-inherit"
             :disabled="data.result.meta.current_page >= data.result.meta.last_page"
             @click="goToPage(data.result.meta.current_page + 1)"
           >
@@ -132,7 +132,7 @@ async function goToPage(page: number) {
         aria-modal="true"
       >
         <div
-          class="absolute inset-0 bg-ink/40"
+          class="absolute inset-0 cursor-pointer bg-ink/40"
           @click="sheetOpen = false"
         />
         <div

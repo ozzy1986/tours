@@ -35,4 +35,24 @@
   h4 {
     font-family: var(--font-display);
   }
+
+  button,
+  [role='button'] {
+    @apply cursor-pointer;
+  }
+
+  button:disabled,
+  [role='button'][aria-disabled='true'] {
+    @apply cursor-not-allowed;
+  }
+
+  select {
+    @apply cursor-pointer;
+  }
+}
+
+@layer components {
+  .btn-link {
+    @apply cursor-pointer;
+  }
 }

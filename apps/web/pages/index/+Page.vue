@@ -42,13 +42,13 @@ const { featured, categories } = useData<Data>()
           v-for="cat in categories"
           :key="cat.id"
           :href="`/tours?category=${encodeURIComponent(cat.slug)}`"
-          class="rounded-full border border-border bg-surface-elevated px-4 py-2 text-sm font-medium transition hover:border-primary hover:bg-primary-muted hover:text-primary"
+          class="btn-link rounded-full border border-border bg-surface-elevated px-4 py-2 text-sm font-medium transition hover:border-primary hover:bg-primary-muted hover:text-primary"
         >
           {{ cat.name }}
         </a>
         <a
           href="/tours"
-          class="rounded-full border border-dashed border-border px-4 py-2 text-sm text-muted hover:border-accent hover:text-accent"
+          class="btn-link rounded-full border border-dashed border-border px-4 py-2 text-sm text-muted hover:border-accent hover:text-accent"
         >
           Все туры
         </a>
