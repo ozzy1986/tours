@@ -125,9 +125,12 @@ class SearchController extends Controller
 
         arsort($scores);
 
-        return collect(array_slice(array_keys($scores), 0, $limit))
-            ->map(fn (int $id) => $toursById[$id])
-            ->values();
+        $ordered = array_map(
+            static fn (int $id) => $toursById[$id],
+            array_slice(array_keys($scores), 0, $limit)
+        );
+
+        return new Collection($ordered);
     }
 
     /** @return Collection<int, Tour> */
