@@ -27,19 +27,22 @@ jobs:
         with:
           php-version: '8.4'
           extensions: pdo_pgsql
-      - name: Install API deps
-        working-directory: apps/api
-        run: composer install --no-interaction --prefer-dist
       - name: Configure env
         working-directory: apps/api
         run: |
           cp .env.example .env
-          php artisan key:generate
+          mkdir -p storage/framework/views storage/framework/cache/data storage/framework/sessions bootstrap/cache
           echo "DB_CONNECTION=pgsql" >> .env
           echo "DB_HOST=127.0.0.1" >> .env
           echo "DB_DATABASE=tours_test" >> .env
           echo "DB_USERNAME=postgres" >> .env
           echo "DB_PASSWORD=postgres" >> .env
+      - name: Install API deps
+        working-directory: apps/api
+        run: composer install --no-interaction --prefer-dist
+      - name: Generate app key
+        working-directory: apps/api
+        run: php artisan key:generate
       - name: Migrate
         working-directory: apps/api
         run: |
