@@ -94,7 +94,7 @@ php artisan tours:embed-all --sync
 cd apps/web
 npm install
 # .env: PUBLIC_API_URL=http://127.0.0.1:8000
-# PUBLIC_YANDEX_MAPS_API_KEY=...  (опционально, для карты)
+# PUBLIC_ENV__PUBLIC_YANDEX_MAPS_API_KEY=...  (опционально, для карты)
 npm run dev
 ```
 

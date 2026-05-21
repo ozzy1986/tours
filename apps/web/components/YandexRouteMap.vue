@@ -1,6 +1,14 @@
 <script setup lang="ts">
-import type { Component } from 'vue'
-import { computed, onMounted, ref, shallowRef } from 'vue'
+import { computed } from 'vue'
+import {
+  YandexMap,
+  YandexMapDefaultFeaturesLayer,
+  YandexMapDefaultSchemeLayer,
+  YandexMapFeature,
+  yandexMapIsLoaded,
+  yandexMapLoadError,
+  yandexMapLoadStatus,
+} from 'vue-yandex-maps'
 import { extractRouteCoordinates, routeCenter } from '@/lib/route'
 import type { RouteGeoJson } from '@/lib/types'
 
@@ -9,40 +17,21 @@ const props = defineProps<{
   height?: string
 }>()
 
-type YmapsComponents = {
-  YandexMap: Component
-  YandexMapDefaultSchemeLayer: Component
-  YandexMapDefaultFeaturesLayer: Component
-  YandexMapFeature: Component
-}
-
 const apikey = (import.meta.env.PUBLIC_ENV__PUBLIC_YANDEX_MAPS_API_KEY ?? '').trim()
 const hasKey = Boolean(apikey)
 
-const ymaps = shallowRef<YmapsComponents | null>(null)
-const ready = ref(false)
-
-onMounted(async () => {
-  if (!hasKey) return
-
-  try {
-    const mod = await import('vue-yandex-maps')
-    mod.createYmapsOptions({ apikey, lang: 'ru_RU' }, true)
-    await mod.initYmaps()
-    ymaps.value = {
-      YandexMap: mod.YandexMap,
-      YandexMapDefaultSchemeLayer: mod.YandexMapDefaultSchemeLayer,
-      YandexMapDefaultFeaturesLayer: mod.YandexMapDefaultFeaturesLayer,
-      YandexMapFeature: mod.YandexMapFeature,
-    }
-    ready.value = true
-  } catch {
-    ready.value = false
-  }
-})
-
 const coordinates = computed(() => extractRouteCoordinates(props.route))
 const center = computed(() => routeCenter(coordinates.value))
+
+const mapFailed = computed(
+  () => hasKey && yandexMapLoadStatus.value === 'error' && Boolean(yandexMapLoadError.value),
+)
+
+function formatLoadError(err: unknown): string {
+  if (err instanceof Error) return err.message
+  if (typeof err === 'string') return err
+  return 'Не удалось загрузить Яндекс.Карты'
+}
 </script>
 
 <template>
@@ -54,7 +43,7 @@ const center = computed(() => routeCenter(coordinates.value))
       v-if="!hasKey"
       class="flex h-full items-center justify-center px-4 text-center text-sm text-muted"
     >
-      Укажите PUBLIC_ENV__PUBLIC_YANDEX_MAPS_API_KEY для отображения карты маршрута.
+      Укажите PUBLIC_ENV__PUBLIC_YANDEX_MAPS_API_KEY в apps/web/.env для отображения карты маршрута.
     </p>
     <p
       v-else-if="!coordinates.length"
@@ -62,9 +51,14 @@ const center = computed(() => routeCenter(coordinates.value))
     >
       Маршрут для этого тура пока не добавлен.
     </p>
-    <component
-      v-else-if="ready && ymaps"
-      :is="ymaps.YandexMap"
+    <p
+      v-else-if="mapFailed"
+      class="flex h-full items-center justify-center px-4 text-center text-sm text-muted"
+    >
+      {{ formatLoadError(yandexMapLoadError) }}
+    </p>
+    <YandexMap
+      v-else-if="yandexMapIsLoaded"
       :settings="{
         location: {
           center: center,
@@ -73,11 +67,10 @@ const center = computed(() => routeCenter(coordinates.value))
       }"
       class="h-full w-full"
     >
-      <component :is="ymaps.YandexMapDefaultSchemeLayer" />
-      <component :is="ymaps.YandexMapDefaultFeaturesLayer" />
-      <component
+      <YandexMapDefaultSchemeLayer />
+      <YandexMapDefaultFeaturesLayer />
+      <YandexMapFeature
         v-if="coordinates.length > 1"
-        :is="ymaps.YandexMapFeature"
         :settings="{
           geometry: {
             type: 'LineString',
@@ -88,7 +81,7 @@ const center = computed(() => routeCenter(coordinates.value))
           },
         }"
       />
-    </component>
+    </YandexMap>
     <div
       v-else
       class="flex h-full items-center justify-center text-sm text-muted"
