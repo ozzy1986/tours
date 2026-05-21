@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none" role="img" aria-label="Tours">
+  <defs>
+    <linearGradient id="tours-bg" x1="4" y1="4" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E86245"/>
+      <stop offset="1" stop-color="#D45438"/>
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="8" fill="url(#tours-bg)"/>
+  <path
+    d="M5 23.5 11.2 15.8 15.2 19.2 20.4 11.5 27 23.5Z"
+    fill="#fff"
+    fill-opacity=".96"
+  />
+  <path
+    d="M9 21.8c3.2-2.8 6.4-4.2 9.6-5.2 2.4-.7 4.8-1 7.4-.9"
+    stroke="#2E9595"
+    stroke-width="2.2"
+    stroke-linecap="round"
+    fill="none"
+  />
+  <circle cx="24.8" cy="11.2" r="2.4" fill="#2E9595"/>
+  <circle cx="24.8" cy="11.2" r="1" fill="#fff"/>
+</svg>

@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 148 36" fill="none" role="img" aria-label="Tours">
+  <defs>
+    <linearGradient id="tours-logo-bg" x1="4" y1="4" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E86245"/>
+      <stop offset="1" stop-color="#D45438"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="32" height="32" rx="8" fill="url(#tours-logo-bg)"/>
+  <path
+    d="M7 25.5 13.2 17.8 17.2 21.2 22.4 13.5 29 25.5Z"
+    fill="#fff"
+    fill-opacity=".96"
+  />
+  <path
+    d="M11 23.8c3.2-2.8 6.4-4.2 9.6-5.2 2.4-.7 4.8-1 7.4-.9"
+    stroke="#2E9595"
+    stroke-width="2.2"
+    stroke-linecap="round"
+    fill="none"
+  />
+  <circle cx="26.8" cy="13.2" r="2.4" fill="#2E9595"/>
+  <circle cx="26.8" cy="13.2" r="1" fill="#fff"/>
+  <text
+    x="44"
+    y="25"
+    font-family="Manrope, ui-sans-serif, system-ui, sans-serif"
+    font-size="22"
+    font-weight="800"
+    letter-spacing="-0.02em"
+    fill="#E86245"
+  >Tours</text>
+</svg>

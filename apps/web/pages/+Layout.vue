@@ -16,8 +16,19 @@ const navLinks = [
   <div class="flex min-h-screen flex-col">
     <header class="sticky top-0 z-40 border-b border-border bg-surface-elevated/95 backdrop-blur">
       <div class="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3 sm:px-6 lg:px-8">
-        <a href="/" class="font-display text-xl font-extrabold tracking-tight text-primary">
-          Tours
+        <a
+          href="/"
+          class="flex shrink-0 items-center gap-2.5 rounded-lg outline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+          aria-label="Tours — на главную"
+        >
+          <img
+            src="/logo.svg"
+            alt=""
+            width="148"
+            height="36"
+            class="h-8 w-auto sm:h-9"
+            decoding="async"
+          />
         </a>
 
         <nav class="hidden items-center gap-6 md:flex" aria-label="Основная навигация">
@@ -71,7 +82,7 @@ const navLinks = [
         class="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-10 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8"
       >
         <div>
-          <p class="font-display text-lg font-bold text-primary">Tours</p>
+          <img src="/logo.svg" alt="Tours" width="148" height="36" class="h-8 w-auto" />
           <p class="mt-1 max-w-sm text-sm text-surface/70">
             Каталог авторских туров с умным поиском и актуальными датами выездов.
           </p>
