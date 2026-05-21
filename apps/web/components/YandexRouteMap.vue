@@ -4,9 +4,9 @@ import type { RouteFeature } from '@yandex/ymaps3-types'
 import {
   YandexMap,
   YandexMapDefaultFeaturesLayer,
-  YandexMapDefaultMarker,
   YandexMapDefaultSchemeLayer,
   YandexMapFeature,
+  YandexMapMarker,
   getCenterFromCoords,
   yandexMapIsLoaded,
   yandexMapLoadError,
@@ -22,6 +22,9 @@ const props = defineProps<{
 
 const apikey = (import.meta.env.PUBLIC_ENV__PUBLIC_YANDEX_MAPS_API_KEY ?? '').trim()
 const hasKey = Boolean(apikey)
+const hasRouterKey = Boolean(
+  (import.meta.env.PUBLIC_ENV__PUBLIC_YANDEX_MAPS_ROUTER_KEY ?? '').trim(),
+)
 
 const waypoints = computed(() => extractRouteWaypoints(props.route))
 const coordinates = computed(() => waypoints.value.map((wp) => wp.coordinates))
@@ -41,7 +44,7 @@ const mapFailed = computed(
 )
 
 const lineStyle = {
-  stroke: [{ color: 'oklch(0.55 0.12 195)', width: 5 }],
+  stroke: [{ color: 'oklch(0.55 0.12 195)', width: 5, dash: hasRouterKey ? undefined : [8, 6] }],
 }
 
 const straightLineFeature = computed(() => {
@@ -58,8 +61,8 @@ const straightLineFeature = computed(() => {
 const displayedRoute = computed(() => {
   if (roadRoute.value) {
     return {
-      ...roadRoute.value,
-      style: lineStyle,
+      geometry: roadRoute.value.geometry,
+      style: { stroke: [{ color: 'oklch(0.55 0.12 195)', width: 5 }] },
     }
   }
   return straightLineFeature.value
@@ -71,9 +74,15 @@ function formatLoadError(err: unknown): string {
   return 'Не удалось загрузить Яндекс.Карты'
 }
 
+function markerLabel(index: number): string {
+  if (index === 0) return 'A'
+  if (index === waypoints.value.length - 1) return 'B'
+  return String(index + 1)
+}
+
 async function loadRoadRoute() {
   const points = coordinates.value
-  if (points.length < 2 || !yandexMapIsLoaded.value) {
+  if (!hasRouterKey || points.length < 2 || !yandexMapIsLoaded.value) {
     roadRoute.value = null
     routeFallback.value = false
     return
@@ -97,8 +106,9 @@ async function loadRoadRoute() {
 
     const routeCoords = feature.geometry.coordinates
     if (routeCoords.length) {
+      const [lng, lat] = getCenterFromCoords(routeCoords)
       mapLocation.value = {
-        center: getCenterFromCoords(routeCoords),
+        center: [lng, lat],
         zoom: Math.min(12, Math.max(5, 8 - Math.floor(points.length / 2))),
       }
     }
@@ -153,19 +163,26 @@ watch(
     >
       <YandexMapDefaultSchemeLayer />
       <YandexMapDefaultFeaturesLayer />
-      <YandexMapDefaultMarker
-        v-for="(wp, index) in waypoints"
-        :key="`${wp.coordinates[0]}-${wp.coordinates[1]}-${index}`"
-        :settings="{
-          coordinates: wp.coordinates,
-          title: wp.name,
-          subtitle: index === 0 ? 'Старт' : index === waypoints.length - 1 ? 'Финиш' : `Остановка ${index}`,
-        }"
-      />
       <YandexMapFeature
         v-if="displayedRoute"
         :settings="displayedRoute"
       />
+      <YandexMapMarker
+        v-for="(wp, index) in waypoints"
+        :key="`${wp.coordinates[0]}-${wp.coordinates[1]}-${index}`"
+        :settings="{ coordinates: wp.coordinates }"
+      >
+        <div class="flex flex-col items-center -translate-y-full">
+          <span
+            class="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-primary text-xs font-semibold text-white shadow-lg"
+          >
+            {{ markerLabel(index) }}
+          </span>
+          <span class="mt-1 max-w-[160px] truncate rounded bg-background/90 px-2 py-0.5 text-xs text-foreground shadow">
+            {{ wp.name }}
+          </span>
+        </div>
+      </YandexMapMarker>
     </YandexMap>
     <div
       v-else
@@ -177,13 +194,19 @@ watch(
       v-if="routeLoading && yandexMapIsLoaded && coordinates.length > 1"
       class="pointer-events-none absolute inset-x-0 bottom-0 bg-background/80 px-3 py-1.5 text-center text-xs text-muted"
     >
-      Строим маршрут по дорогам…
+      Строим пеший маршрут…
+    </p>
+    <p
+      v-else-if="!hasRouterKey && yandexMapIsLoaded && coordinates.length > 1"
+      class="pointer-events-none absolute inset-x-0 bottom-0 bg-background/80 px-3 py-1.5 text-center text-xs text-muted"
+    >
+      Пунктир — приблизительный маршрут. Для построения по пешеходным дорожкам подключите пакет «Матрица расстояний и построения маршрута» и укажите PUBLIC_ENV__PUBLIC_YANDEX_MAPS_ROUTER_KEY.
     </p>
     <p
       v-else-if="routeFallback && coordinates.length > 1"
       class="pointer-events-none absolute inset-x-0 bottom-0 bg-background/80 px-3 py-1.5 text-center text-xs text-muted"
     >
-      Маршрут по дорогам недоступен — прямая линия между точками. Нужен ключ Router API в кабинете Яндекса (servicesApikeys.router). Карты: Referer localhost, открывайте http://localhost:3000.
+      Пеший маршрут недоступен — показана прямая. Проверьте квоту/Referer ключа Router API в кабинете Яндекса.
     </p>
   </div>
 </template>

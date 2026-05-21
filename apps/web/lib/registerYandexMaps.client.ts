@@ -20,19 +20,18 @@ export async function registerYandexMapsPlugin(app: App): Promise<void> {
     return
   }
 
-  const routerKey = (
-    import.meta.env.PUBLIC_ENV__PUBLIC_YANDEX_MAPS_ROUTER_KEY ?? apikey
-  ).trim()
+  // Router API is a separate Yandex pack (`Матрица расстояний и построения маршрута`),
+  // so we only register it when a dedicated key is provided — otherwise the
+  // call would return 401 and pollute the console.
+  const routerKey = (import.meta.env.PUBLIC_ENV__PUBLIC_YANDEX_MAPS_ROUTER_KEY ?? '').trim()
 
   app.use(
     createYmaps({
       apikey,
       lang: 'ru_RU',
       initializeOn: 'onPluginInit',
-      cdnLibraryLoading: { enabled: false },
-      servicesApikeys: {
-        router: routerKey,
-      },
+      cdnLibraryLoading: { enabled: true },
+      ...(routerKey ? { servicesApikeys: { router: routerKey } } : {}),
     }),
   )
   registered = true

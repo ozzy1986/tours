@@ -61,7 +61,7 @@ async function fetchRouteSegment(
 ): Promise<LngLat[]> {
   const routes = await ymaps3.route({
     points: [from, to],
-    type: 'driving',
+    type: 'walking',
     bounds: false,
   })
 
@@ -94,7 +94,7 @@ export async function fetchRoadRoute(
   if (waypoints.length === 2) {
     const routes = await ymaps3.route({
       points: waypoints,
-      type: 'driving',
+      type: 'walking',
       bounds: true,
     })
     const feature = routes[0]?.toRoute()

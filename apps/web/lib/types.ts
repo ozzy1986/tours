@@ -37,7 +37,7 @@ export interface TourSummary {
 }
 
 export interface RouteGeoJson {
-  type: 'LineString' | 'Feature' | 'FeatureCollection'
+  type?: 'LineString' | 'Feature' | 'FeatureCollection'
   coordinates?: [number, number][]
   geometry?: {
     type: string

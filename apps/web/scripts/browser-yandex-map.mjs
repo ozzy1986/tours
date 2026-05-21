@@ -7,6 +7,7 @@ const urls = [
 
 const mapLoadingPattern = /Загрузка карты/
 const ymapsErrorPattern = /ymaps|jsdelivr|YandexMapException|vue-yandex-maps|api-maps\.yandex/i
+const routeBuildingPattern = /Строим пеший маршрут/
 
 function redact(text) {
   return text.replace(/apikey=[^&\s]+/gi, 'apikey=REDACTED')
@@ -64,13 +65,23 @@ for (const url of urls) {
     await page.waitForTimeout(500)
   }
 
+  // Wait for the walking route to finish building before snapshotting console errors.
+  const routeDeadline = Date.now() + 20000
+  while (Date.now() < routeDeadline) {
+    const current = (await section.innerText()).trim()
+    if (!routeBuildingPattern.test(current)) break
+    await page.waitForTimeout(500)
+  }
+
   const mapErrors = consoleErrors.filter(isMapRelatedError).map(redact)
   const canvas = section.locator('canvas')
   const hasCanvas = (await canvas.count()) > 0
+  const routeFallbackVisible = (await section.locator('text=/Пеший маршрут недоступен/').count()) > 0
 
   console.log('STUCK_ON_LOADING:', stuckOnLoading)
   console.log('MAP_SECTION_PREVIEW:', mapText.slice(0, 280).replace(/\s+/g, ' '))
   console.log('HAS_MAP_CANVAS:', hasCanvas)
+  console.log('ROUTE_FALLBACK_UI:', routeFallbackVisible)
   console.log('MAP_RELATED_CONSOLE_ERRORS:', JSON.stringify(mapErrors, null, 2))
   console.log('ALL_CONSOLE_ERRORS:', JSON.stringify(consoleErrors.map(redact), null, 2))
   const keyHint = await page.locator('text=PUBLIC_ENV__PUBLIC_YANDEX_MAPS_API_KEY').count()
