@@ -6,6 +6,7 @@ from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 
+from .auth import require_api_key
 from .config import settings
 from .model import Embedder, get_embedder
 from .schemas import EmbedRequest, EmbedResponse, HealthResponse
@@ -42,7 +43,7 @@ def create_app() -> FastAPI:
             model_loaded=embedder.is_loaded,
         )
 
-    @app.post("/embed", response_model=EmbedResponse)
+    @app.post("/embed", response_model=EmbedResponse, dependencies=[Depends(require_api_key)])
     def embed(
         payload: EmbedRequest,
         prefix: str = Query("passage", pattern="^(passage|query)$"),

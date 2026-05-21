@@ -39,6 +39,7 @@ return [
         'url' => env('EMBEDDINGS_URL', 'http://127.0.0.1:8001'),
         'dim' => (int) env('EMBEDDINGS_DIM', 384),
         'timeout' => (int) env('EMBEDDINGS_TIMEOUT', 30),
+        'api_key' => env('EMBEDDINGS_API_KEY'),
     ],
 
     'llm' => [

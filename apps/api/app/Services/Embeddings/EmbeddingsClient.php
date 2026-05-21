@@ -14,6 +14,7 @@ class EmbeddingsClient
         private readonly string $baseUrl,
         private readonly int $dimension,
         private readonly int $timeout,
+        private readonly ?string $apiKey = null,
     ) {}
 
     /**
@@ -29,12 +30,17 @@ class EmbeddingsClient
         }
 
         try {
-            $response = Http::timeout($this->timeout)
+            $request = Http::timeout($this->timeout)
                 ->acceptJson()
-                ->asJson()
-                ->post(rtrim($this->baseUrl, '/') . "/embed?prefix={$prefix}", [
-                    'texts' => array_values($texts),
-                ]);
+                ->asJson();
+
+            if (filled($this->apiKey)) {
+                $request = $request->withHeaders(['X-Api-Key' => $this->apiKey]);
+            }
+
+            $response = $request->post(rtrim($this->baseUrl, '/') . "/embed?prefix={$prefix}", [
+                'texts' => array_values($texts),
+            ]);
         } catch (Throwable $e) {
             throw new EmbeddingsException("Embeddings service unreachable: {$e->getMessage()}", 0, $e);
         }

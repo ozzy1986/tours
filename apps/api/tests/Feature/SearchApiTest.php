@@ -32,13 +32,14 @@ it('returns semantic search results when embeddings succeed', function () {
     ]));
 
     $expectedMode = Schema::getConnection()->getDriverName() === 'pgsql'
+        && Schema::hasColumn('tours', 'embedding')
         ? 'semantic'
         : 'keyword';
 
-    $this->postJson('/api/search', ['q' => 'mountain hike'])
+    $this->postJson('/api/search', ['q' => 'zzzyyyxqw semantic only'])
         ->assertOk()
         ->assertJsonPath('meta.mode', $expectedMode)
-        ->assertJsonPath('meta.query', 'mountain hike');
+        ->assertJsonPath('meta.query', 'zzzyyyxqw semantic only');
 });
 
 it('returns fallback results when embeddings fail', function () {
@@ -91,9 +92,14 @@ it('returns crimea tour first for lowercase Cyrillic query крым', function (
         ]);
     });
 
+    $expectedMode = Schema::getConnection()->getDriverName() === 'pgsql'
+        && Schema::hasColumn('tours', 'embedding')
+        ? 'hybrid'
+        : 'keyword';
+
     $this->postJson('/api/search', ['q' => 'крым'])
         ->assertOk()
-        ->assertJsonPath('meta.mode', 'keyword')
+        ->assertJsonPath('meta.mode', $expectedMode)
         ->assertJsonPath('data.0.title', 'Крым: Севастополь и Балаклава');
 });
 
@@ -131,7 +137,12 @@ it('returns crimea tour first for Cyrillic query Крым', function () {
     $response->assertOk()
         ->assertJsonPath('data.0.title', 'Крым: Севастополь и Балаклава');
 
-    expect($response->json('meta.mode'))->toBe('keyword');
+    $expectedMode = Schema::getConnection()->getDriverName() === 'pgsql'
+        && Schema::hasColumn('tours', 'embedding')
+        ? 'hybrid'
+        : 'keyword';
+
+    expect($response->json('meta.mode'))->toBe($expectedMode);
     expect($response->json('data.0.title'))->toContain('Крым');
 });
 
@@ -151,6 +162,9 @@ it('matches lowercase крым against capitalized tour titles', function () {
     $this->postJson('/api/search', ['q' => 'крым'])
         ->assertOk()
         ->assertJsonPath('data.0.slug', 'crimea-sevastopol')
-        ->assertJsonPath('meta.mode', 'keyword')
+        ->assertJsonPath('meta.mode', Schema::getConnection()->getDriverName() === 'pgsql'
+            && Schema::hasColumn('tours', 'embedding')
+            ? 'hybrid'
+            : 'keyword')
         ->assertJsonCount(1, 'data');
 });

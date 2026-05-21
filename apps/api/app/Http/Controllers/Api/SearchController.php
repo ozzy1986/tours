@@ -13,10 +13,15 @@ use App\Services\Embeddings\EmbeddingsException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class SearchController extends Controller
 {
+    private const float HYBRID_KEYWORD_WEIGHT = 0.65;
+
+    private const float HYBRID_VECTOR_WEIGHT = 0.35;
+
     public function __invoke(SearchRequest $request, EmbeddingsClient $client): JsonResponse
     {
         $query = (string) $request->validated('q');
@@ -54,26 +59,116 @@ class SearchController extends Controller
             && Schema::hasColumn('tours', 'embedding');
     }
 
+    private function supportsPgTrgm(): bool
+    {
+        if (Schema::getConnection()->getDriverName() !== 'pgsql') {
+            return false;
+        }
+
+        try {
+            $row = DB::selectOne(
+                "SELECT 1 FROM pg_extension WHERE extname = 'pg_trgm' LIMIT 1"
+            );
+
+            return $row !== null;
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
     /**
-     * Keyword matches when present; otherwise vector similarity only.
+     * Merge keyword hits with vector similarity when both are available.
      *
      * @param  array<int, float>  $vector
      * @return array{0: Collection<int, Tour>, 1: string}
      */
     private function hybridSearch(string $query, array $vector, int $limit): array
     {
-        $keywordTours = $this->keywordSearch($query, $limit);
+        $keywordTours = $this->keywordSearch($query, $limit * 3);
 
         if ($keywordTours->isEmpty()) {
             return [$this->vectorSearch($vector, $limit), 'semantic'];
         }
 
-        // Text matches only — do not dilute with irrelevant vector results (stub embeddings).
-        return [$keywordTours, 'keyword'];
+        $vectorTours = $this->vectorSearch($vector, $limit * 3);
+
+        return [
+            $this->mergeHybridResults($keywordTours, $vectorTours, $limit),
+            'hybrid',
+        ];
+    }
+
+    /**
+     * @param  Collection<int, Tour>  $keywordTours
+     * @param  Collection<int, Tour>  $vectorTours
+     * @return Collection<int, Tour>
+     */
+    private function mergeHybridResults(Collection $keywordTours, Collection $vectorTours, int $limit): Collection
+    {
+        /** @var array<int, float> $scores */
+        $scores = [];
+        /** @var array<int, Tour> $toursById */
+        $toursById = [];
+
+        foreach ($keywordTours as $tour) {
+            $kw = (float) ($tour->getAttribute('keyword_score') ?? 1.0);
+            $scores[$tour->id] = ($scores[$tour->id] ?? 0.0) + self::HYBRID_KEYWORD_WEIGHT * min(1.0, max(0.0, $kw));
+            $toursById[$tour->id] = $tour;
+        }
+
+        foreach ($vectorTours as $tour) {
+            $dist = (float) ($tour->getAttribute('distance') ?? 1.0);
+            $vec = 1.0 / (1.0 + max(0.0, $dist));
+            $scores[$tour->id] = ($scores[$tour->id] ?? 0.0) + self::HYBRID_VECTOR_WEIGHT * $vec;
+            $toursById[$tour->id] = $tour;
+        }
+
+        arsort($scores);
+
+        return collect(array_slice(array_keys($scores), 0, $limit))
+            ->map(fn (int $id) => $toursById[$id])
+            ->values();
     }
 
     /** @return Collection<int, Tour> */
     private function keywordSearch(string $query, int $limit): Collection
+    {
+        if ($this->supportsPgTrgm()) {
+            return $this->keywordSearchPgTrgm($query, $limit);
+        }
+
+        return $this->keywordSearchLike($query, $limit);
+    }
+
+    /** @return Collection<int, Tour> */
+    private function keywordSearchPgTrgm(string $query, int $limit): Collection
+    {
+        $terms = $this->searchTerms($query);
+        $expr = $this->searchableTextExpression();
+        $needle = mb_strtolower(trim($query), 'UTF-8');
+
+        return $this->publishedTourQuery()
+            ->where(function ($q) use ($terms, $expr, $needle) {
+                foreach ($terms as $term) {
+                    $t = mb_strtolower($term, 'UTF-8');
+                    $q->orWhereRaw("{$expr} % ?", [$t])
+                        ->orWhereRaw("similarity({$expr}, ?) > 0.05", [$t]);
+                }
+                if ($needle !== '') {
+                    $q->orWhereRaw("similarity({$expr}, ?) > 0.05", [$needle]);
+                }
+            })
+            ->selectRaw(
+                "tours.*, GREATEST(similarity({$expr}, ?), 0.05) AS keyword_score",
+                [$needle !== '' ? $needle : ' ']
+            )
+            ->orderByDesc('keyword_score')
+            ->limit($limit)
+            ->get();
+    }
+
+    /** @return Collection<int, Tour> */
+    private function keywordSearchLike(string $query, int $limit): Collection
     {
         $terms = $this->searchTerms($query);
 
@@ -82,18 +177,9 @@ class SearchController extends Controller
                 foreach ($terms as $term) {
                     $q->orWhere(function ($sub) use ($term) {
                         foreach ($this->termLikePatterns($term) as $pattern) {
-                            $sub->orWhere(function ($inner) use ($pattern) {
-                                $inner->where('title', 'like', $pattern)
-                                    ->orWhere('summary', 'like', $pattern)
-                                    ->orWhere('description', 'like', $pattern);
-                            });
-                        }
-
-                        if (Schema::getConnection()->getDriverName() === 'pgsql') {
-                            $needle = '%' . mb_strtolower($term, 'UTF-8') . '%';
-                            $sub->orWhereRaw('LOWER(title) LIKE ?', [$needle])
-                                ->orWhereRaw('LOWER(summary) LIKE ?', [$needle])
-                                ->orWhereRaw('LOWER(description) LIKE ?', [$needle]);
+                            $sub->orWhere('title', 'like', $pattern)
+                                ->orWhere('summary', 'like', $pattern)
+                                ->orWhere('description', 'like', $pattern);
                         }
                     });
                 }
@@ -101,6 +187,11 @@ class SearchController extends Controller
             ->orderByDesc('published_at')
             ->limit($limit)
             ->get();
+    }
+
+    private function searchableTextExpression(): string
+    {
+        return "lower(title || ' ' || coalesce(summary, '') || ' ' || coalesce(description, ''))";
     }
 
     /** @return list<string> */
@@ -146,13 +237,18 @@ class SearchController extends Controller
      */
     private function vectorSearch(array $embedding, int $limit, array $excludeIds = []): Collection
     {
+        $vector = EmbeddingsClient::encodeForPg($embedding);
         $query = $this->publishedTourQuery()->whereNotNull('embedding');
 
         if ($excludeIds !== []) {
             $query->whereNotIn('id', $excludeIds);
         }
 
-        return $query->orderByEmbedding($embedding)->limit($limit)->get();
+        return $query
+            ->selectRaw('tours.*, embedding <=> ?::vector AS distance', [$vector])
+            ->orderByRaw('embedding <=> ?::vector', [$vector])
+            ->limit($limit)
+            ->get();
     }
 
     /** @return Builder<Tour> */

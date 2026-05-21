@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     ]
     # Real HuggingFace model by default. Set USE_STUB=true only when HF is unreachable.
     use_stub: bool = False
+    # When set, POST /embed requires matching X-Api-Key header.
+    embeddings_api_key: str | None = None
 
 
 settings = Settings()

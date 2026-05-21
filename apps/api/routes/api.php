@@ -14,8 +14,10 @@ Route::get('/user', function (Request $request) {
 
 Route::get('categories', [CategoryController::class, 'index']);
 
-Route::get('tours/featured', [TourController::class, 'featured']);
-Route::get('tours/{slug}', [TourController::class, 'show'])->where('slug', '[a-z0-9-]+');
-Route::get('tours', [TourController::class, 'index']);
+Route::middleware('throttle:120,1')->group(function () {
+    Route::get('tours/featured', [TourController::class, 'featured']);
+    Route::get('tours/{slug}', [TourController::class, 'show'])->where('slug', '[a-z0-9-]+');
+    Route::get('tours', [TourController::class, 'index']);
+});
 
 Route::post('search', SearchController::class)->middleware('throttle:30,1');

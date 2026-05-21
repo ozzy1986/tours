@@ -22,6 +22,14 @@ it('redirects admin root to login when guest', function (): void {
     $this->get('/admin')->assertRedirect('/admin/login');
 });
 
+it('denies non-admin user access to filament panel', function (): void {
+    $user = User::factory()->create(['is_admin' => false]);
+
+    $this->actingAs($user)
+        ->get('/admin/tours')
+        ->assertForbidden();
+});
+
 it('allows admin user to open tours list', function (): void {
     $admin = User::factory()->create(['is_admin' => true]);
 

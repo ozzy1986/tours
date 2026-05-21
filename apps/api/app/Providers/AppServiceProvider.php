@@ -20,6 +20,7 @@ class AppServiceProvider extends ServiceProvider
                 baseUrl: $cfg['url'],
                 dimension: (int) $cfg['dim'],
                 timeout: (int) $cfg['timeout'],
+                apiKey: $cfg['api_key'] ?? null,
             );
         });
     }
