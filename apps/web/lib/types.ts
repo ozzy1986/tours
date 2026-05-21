@@ -49,7 +49,7 @@ export interface RouteGeoJson {
       coordinates: [number, number][]
     }
   }>
-  waypoints?: Array<{ lat: number; lng: number } | [number, number]>
+  waypoints?: Array<{ lat: number; lng: number; name?: string } | [number, number]>
 }
 
 export interface TourDetail {

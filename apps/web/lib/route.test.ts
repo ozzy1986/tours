@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { extractRouteCoordinates, routeCenter } from './route'
+import { extractRouteCoordinates, extractRouteWaypoints, routeCenter } from './route'
 
 describe('extractRouteCoordinates', () => {
   it('reads waypoints as lng/lat objects', () => {
@@ -28,6 +28,19 @@ describe('extractRouteCoordinates', () => {
 
   it('returns empty array for null', () => {
     expect(extractRouteCoordinates(null)).toEqual([])
+  })
+})
+
+describe('extractRouteWaypoints', () => {
+  it('keeps waypoint names from geojson', () => {
+    const points = extractRouteWaypoints({
+      waypoints: [
+        { name: 'Иркутск', lat: 52.28, lng: 104.28 },
+        { name: 'Ольхон', lat: 53.15, lng: 107.34 },
+      ],
+    })
+    expect(points[0].name).toBe('Иркутск')
+    expect(points[1].coordinates).toEqual([107.34, 53.15])
   })
 })
 

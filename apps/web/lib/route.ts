@@ -1,5 +1,10 @@
 import type { RouteGeoJson } from './types'
 
+export interface RouteWaypoint {
+  coordinates: [number, number]
+  name: string
+}
+
 /** Extract [lng, lat] pairs from API route_geojson. */
 export function extractRouteCoordinates(
   geojson: RouteGeoJson | null | undefined,
@@ -33,6 +38,33 @@ export function extractRouteCoordinates(
   }
 
   return []
+}
+
+/** Waypoints with optional labels for map markers. */
+export function extractRouteWaypoints(
+  geojson: RouteGeoJson | null | undefined,
+): RouteWaypoint[] {
+  if (!geojson?.waypoints?.length) {
+    return extractRouteCoordinates(geojson).map((coordinates, index) => ({
+      coordinates,
+      name: `Точка ${index + 1}`,
+    }))
+  }
+
+  return geojson.waypoints
+    .map((wp, index) => {
+      if (Array.isArray(wp)) {
+        return {
+          coordinates: [wp[0], wp[1]] as [number, number],
+          name: `Точка ${index + 1}`,
+        }
+      }
+      return {
+        coordinates: [wp.lng, wp.lat] as [number, number],
+        name: wp.name?.trim() || `Точка ${index + 1}`,
+      }
+    })
+    .filter((wp) => wp.coordinates[0] !== 0 || wp.coordinates[1] !== 0)
 }
 
 export function routeCenter(coords: [number, number][]): [number, number] {

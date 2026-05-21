@@ -94,11 +94,12 @@ php artisan tours:embed-all --sync
 cd apps/web
 npm install
 # .env: PUBLIC_API_URL=http://127.0.0.1:8000
-# PUBLIC_ENV__PUBLIC_YANDEX_MAPS_API_KEY=...  (опционально, для карты)
+# PUBLIC_ENV__PUBLIC_YANDEX_MAPS_API_KEY=...  (карта и маршрут по дорогам)
+# PUBLIC_ENV__PUBLIC_YANDEX_MAPS_ROUTER_KEY=...  (опционально, иначе тот же ключ)
 npm run dev
 ```
 
-**Сайт:** http://localhost:3000
+**Сайт:** http://localhost:3000 (для Яндекс.Карт в Referer ключа укажите `localhost`, не открывайте сайт как `127.0.0.1` — [quickstart](https://yandex.ru/maps-api/docs/js-api/common/quickstart.html#localhost))
 
 ### Makefile (корень)
 
