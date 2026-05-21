@@ -12,6 +12,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 
 class TourResource extends Resource
@@ -25,6 +26,28 @@ class TourResource extends Resource
     protected static ?int $navigationSort = 1;
 
     protected static ?string $recordTitleAttribute = 'title';
+
+    /** @var list<string> */
+    private const ADMIN_COLUMNS = [
+        'id',
+        'slug',
+        'title',
+        'summary',
+        'description',
+        'duration_days',
+        'route_geojson',
+        'cover_url',
+        'meta_title',
+        'meta_description',
+        'published_at',
+        'created_at',
+        'updated_at',
+    ];
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->select(static::ADMIN_COLUMNS);
+    }
 
     public static function form(Form $form): Form
     {
