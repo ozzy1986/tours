@@ -51,6 +51,7 @@ apps/web/.vike/
 apps/web/coverage/
 apps/web/playwright-report/
 apps/web/test-results/
+apps/web/scripts/browser-yandex-map-*.png
 apps/web/.vite/
 
 # Python
