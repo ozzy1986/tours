@@ -1,5 +1,5 @@
 ---
-description: Commit and push to GitHub after completing user-requested work
+description: Tests, browser QA, then commit and push to GitHub
 alwaysApply: true
 ---
 
@@ -7,8 +7,13 @@ alwaysApply: true
 
 After finishing a user task that changed the repo:
 
-1. Run `git status` and include all relevant changes (no `.env` or secrets).
-2. Commit with a clear English message describing why.
-3. Push to `origin` on the current branch (`git push -u origin HEAD` if no upstream).
+1. Run **all** test suites that apply:
+   - `cd apps/api && ./vendor/bin/pest`
+   - `cd apps/web && npm test -- --run`
+   - `cd services/embeddings && pytest` (when embeddings code changed)
+2. **Browser-test** affected UI (Playwright or manual checklist) on real dev URLs — no "done" without verifying the feature in the browser.
+3. Fix failures at the root; repeat tests + browser until clean.
+4. `git status` — stage relevant files only (never `.env` or secrets).
+5. Commit with a clear English message; `git push` to `origin` on the current branch.
 
-Do this in the same session before reporting done, unless the user asked not to push or there is nothing to commit.
+Skip push only when the user explicitly asks, or there is nothing to commit.
