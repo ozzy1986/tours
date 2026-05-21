@@ -40,6 +40,11 @@ jobs:
       - name: Install API deps
         working-directory: apps/api
         run: composer install --no-interaction --prefer-dist
+      - name: Publish Filament assets
+        working-directory: apps/api
+        run: |
+          php artisan vendor:publish --tag=filament-panels-translations --force --no-ansi
+          php artisan filament:assets --no-ansi
       - name: Generate app key
         working-directory: apps/api
         run: php artisan key:generate

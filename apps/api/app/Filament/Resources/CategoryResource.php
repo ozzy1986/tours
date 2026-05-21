@@ -22,12 +22,20 @@ class CategoryResource extends Resource
 
     protected static ?int $navigationSort = 2;
 
+    protected static ?string $navigationLabel = 'Категории';
+
+    protected static ?string $modelLabel = 'категория';
+
+    protected static ?string $pluralModelLabel = 'категории';
+
     public static function form(Form $form): Form
     {
         return $form->schema([
             Forms\Components\TextInput::make('name')->required()->maxLength(120),
             Forms\Components\TextInput::make('slug')->required()->maxLength(80)->unique(ignoreRecord: true),
-            Forms\Components\TextInput::make('icon')->maxLength(40)->helperText('Lucide icon name, e.g. sun, mountain'),
+            Forms\Components\TextInput::make('icon')
+                ->maxLength(40)
+                ->helperText('Иконка Lucide, например sun, mountain'),
             Forms\Components\TextInput::make('position')->numeric()->default(0),
         ]);
     }

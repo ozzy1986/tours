@@ -25,6 +25,12 @@ class TourResource extends Resource
 
     protected static ?int $navigationSort = 1;
 
+    protected static ?string $navigationLabel = 'Туры';
+
+    protected static ?string $modelLabel = 'тур';
+
+    protected static ?string $pluralModelLabel = 'туры';
+
     protected static ?string $recordTitleAttribute = 'title';
 
     /** @var list<string> */
