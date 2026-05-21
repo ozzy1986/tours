@@ -4,7 +4,7 @@ import { usePageContext } from 'vike-vue/usePageContext'
 const pageContext = usePageContext()
 const title = () => {
   const t = pageContext.data?.title as string | undefined
-  return t ? `${t} · Tours` : 'Tours — каталог туров'
+  return t ? `${t} · Taco Tours` : 'Taco Tours — каталог туров'
 }
 const description = () =>
   (pageContext.data?.description as string | undefined) ??

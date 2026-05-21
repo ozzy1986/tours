@@ -19,7 +19,7 @@ const navLinks = [
         <a
           href="/"
           class="flex shrink-0 items-center gap-2.5 rounded-lg outline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-          aria-label="Tours — на главную"
+          aria-label="Taco Tours — на главную"
         >
           <img
             src="/logo.svg"
@@ -82,7 +82,7 @@ const navLinks = [
         class="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-10 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8"
       >
         <div>
-          <img src="/logo.svg" alt="Tours" width="148" height="36" class="h-8 w-auto" />
+          <img src="/logo.svg" alt="Taco Tours" width="188" height="36" class="h-8 w-auto" />
           <p class="mt-1 max-w-sm text-sm text-surface/70">
             Каталог авторских туров с умным поиском и актуальными датами выездов.
           </p>
@@ -91,7 +91,7 @@ const navLinks = [
           <a href="/tours" class="hover:text-primary">Все туры</a>
           <a href="/search?q=горы" class="hover:text-primary">Поиск</a>
         </nav>
-        <p class="text-xs text-surface/50">© {{ new Date().getFullYear() }} Tours</p>
+        <p class="text-xs text-surface/50">© {{ new Date().getFullYear() }} Taco Tours</p>
       </div>
     </footer>
   </div>
