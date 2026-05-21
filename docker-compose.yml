@@ -1,5 +1,8 @@
 # Docker compose for reproducible local/CI environment.
 # Local dev on Windows defaults to Laragon, this is for CI and "git clone && make up".
+#
+# Dev web (hot reload):  docker compose up -d
+# Production web image:  docker compose --profile production up -d web-prod
 
 services:
   db:
@@ -29,11 +32,17 @@ services:
     environment:
       HOST: 0.0.0.0
       PORT: 8001
-      USE_STUB: "false"
+      USE_STUB: "true"
       MODEL_ID: intfloat/multilingual-e5-small
       EMBEDDING_DIM: "384"
     volumes:
       - models-cache:/root/.cache/huggingface
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8001/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
 
   api:
     build:
@@ -44,17 +53,45 @@ services:
       db:
         condition: service_healthy
       embeddings:
-        condition: service_started
+        condition: service_healthy
     environment:
       APP_ENV: local
+      APP_KEY: ${APP_KEY:-}
+      DB_CONNECTION: pgsql
       DB_HOST: db
       DB_PORT: 5432
       DB_DATABASE: tours
       DB_USERNAME: postgres
       DB_PASSWORD: root
       EMBEDDINGS_URL: http://embeddings:8001
+      QUEUE_CONNECTION: database
     ports:
       - "8000:8000"
+    volumes:
+      - ./apps/api:/var/www/html
+
+  queue:
+    build:
+      context: ./apps/api
+      dockerfile: ../../docker/Dockerfile.api
+    restart: unless-stopped
+    command: ["php", "artisan", "queue:work", "--sleep=3", "--tries=3"]
+    depends_on:
+      db:
+        condition: service_healthy
+      api:
+        condition: service_started
+    environment:
+      APP_ENV: local
+      APP_KEY: ${APP_KEY:-}
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: tours
+      DB_USERNAME: postgres
+      DB_PASSWORD: root
+      EMBEDDINGS_URL: http://embeddings:8001
+      QUEUE_CONNECTION: database
     volumes:
       - ./apps/api:/var/www/html
 
@@ -62,6 +99,7 @@ services:
     build:
       context: ./apps/web
       dockerfile: ../../docker/Dockerfile.web
+      target: dev
     restart: unless-stopped
     depends_on:
       - api
@@ -71,6 +109,20 @@ services:
       - "3000:3000"
     volumes:
       - ./apps/web:/app
+
+  web-prod:
+    profiles: [production]
+    build:
+      context: ./apps/web
+      dockerfile: ../../docker/Dockerfile.web
+      target: production
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      PUBLIC_API_URL: http://api:8000
+    ports:
+      - "3000:3000"
 
 volumes:
   db-data:

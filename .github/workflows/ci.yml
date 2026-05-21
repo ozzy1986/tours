@@ -58,8 +58,15 @@ jobs:
         run: |
           PGPASSWORD=postgres psql -h 127.0.0.1 -U postgres -d tours_test -c "CREATE EXTENSION IF NOT EXISTS vector;"
           php artisan migrate --force
-      - name: Pest
+      - name: Pest (PostgreSQL)
         working-directory: apps/api
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: tours_test
+          DB_USERNAME: postgres
+          DB_PASSWORD: postgres
         run: ./vendor/bin/pest
 
   web:
@@ -69,10 +76,34 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: npm ci
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - name: Install and unit tests
         working-directory: apps/web
-      - run: npm run build
+        run: |
+          npm ci
+          npm test -- --run
+      - name: Production build
         working-directory: apps/web
+        run: npm run build
+
+  web-e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - name: Install Playwright browsers
+        working-directory: apps/web
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Build and smoke e2e
+        working-directory: apps/web
+        run: npm run test:e2e:ci
 
   embeddings:
     runs-on: ubuntu-latest

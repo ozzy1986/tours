@@ -10,7 +10,7 @@ help:
 	@echo "  api         Run Laravel + Filament on :8000 (Laragon)"
 	@echo "  web         Run Vike/Vue dev server on :3000 (Laragon)"
 	@echo "  embeddings  Run FastAPI on :8001 (Laragon)"
-	@echo "  up          docker compose up -d"
+	@echo "  up          docker compose up -d (db, api, queue, web, embeddings)"
 	@echo "  down        docker compose down"
 	@echo "  logs        docker compose logs -f"
 	@echo "  test        Run all test suites (pest + vitest + pytest)"
