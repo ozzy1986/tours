@@ -43,7 +43,12 @@ jobs:
       - name: Publish Filament assets
         working-directory: apps/api
         run: |
+          php artisan vendor:publish --tag=filament-actions-translations --force --no-ansi
+          php artisan vendor:publish --tag=filament-forms-translations --force --no-ansi
+          php artisan vendor:publish --tag=filament-tables-translations --force --no-ansi
+          php artisan vendor:publish --tag=filament-notifications-translations --force --no-ansi
           php artisan vendor:publish --tag=filament-panels-translations --force --no-ansi
+          php artisan vendor:publish --tag=filament-translations --force --no-ansi
           php artisan filament:assets --no-ansi
       - name: Generate app key
         working-directory: apps/api

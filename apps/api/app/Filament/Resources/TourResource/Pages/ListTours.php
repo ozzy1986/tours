@@ -12,6 +12,8 @@ class ListTours extends ListRecords
 {
     protected static string $resource = TourResource::class;
 
+    protected static ?string $title = 'Туры';
+
     protected function getHeaderActions(): array
     {
         return [

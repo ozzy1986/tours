@@ -93,7 +93,8 @@ class TourResource extends Resource
                         ->label('Обложка (URL)')
                         ->url(),
                     Forms\Components\DateTimePicker::make('published_at')
-                        ->label('Дата публикации'),
+                        ->label('Дата публикации')
+                        ->locale('ru'),
                 ])->columns(2),
                 Forms\Components\Tabs\Tab::make('Маршрут')->schema([
                     Forms\Components\Textarea::make('route_geojson')
@@ -109,7 +110,7 @@ class TourResource extends Resource
                         })
                         ->rows(12)
                         ->columnSpanFull()
-                        ->helperText('LineString + waypoints. Генерация LLM заполняет автоматически.'),
+                        ->helperText('LineString и точки маршрута. Поле заполняется автоматически при генерации через LLM.'),
                 ]),
                 Forms\Components\Tabs\Tab::make('SEO')->schema([
                     Forms\Components\TextInput::make('meta_title')

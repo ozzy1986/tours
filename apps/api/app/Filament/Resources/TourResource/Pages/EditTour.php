@@ -12,6 +12,11 @@ class EditTour extends EditRecord
 {
     protected static string $resource = TourResource::class;
 
+    public function getTitle(): string
+    {
+        return 'Редактирование тура';
+    }
+
     protected function getHeaderActions(): array
     {
         return [

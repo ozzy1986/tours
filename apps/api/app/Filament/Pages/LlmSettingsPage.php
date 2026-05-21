@@ -57,7 +57,7 @@ class LlmSettingsPage extends Page implements HasForms
         return $form
             ->schema([
                 Forms\Components\Section::make('Подключение')
-                    ->description('OpenAI-compatible API (OpenAI, Ollama, LM Studio). Ключ хранится зашифрованным в БД.')
+                    ->description('Совместимый с OpenAI API (OpenAI, Ollama, LM Studio). Ключ хранится зашифрованным в БД.')
                     ->schema([
                         Forms\Components\Toggle::make('enabled')->label('Включить LLM-генерацию'),
                         Forms\Components\Select::make('provider')
@@ -69,12 +69,12 @@ class LlmSettingsPage extends Page implements HasForms
                             ])
                             ->required(),
                         Forms\Components\TextInput::make('base_url')
-                            ->label('Base URL')
+                            ->label('Базовый URL')
                             ->url()
                             ->required()
                             ->default('https://api.openai.com/v1'),
                         Forms\Components\TextInput::make('api_key')
-                            ->label('API Key')
+                            ->label('Ключ API')
                             ->password()
                             ->revealable()
                             ->helperText('Оставьте ******** чтобы не менять существующий ключ'),

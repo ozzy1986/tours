@@ -19,6 +19,11 @@ class CreateTour extends CreateRecord
 {
     protected static string $resource = TourResource::class;
 
+    public function getTitle(): string
+    {
+        return 'Новый тур';
+    }
+
     protected function getHeaderActions(): array
     {
         return [

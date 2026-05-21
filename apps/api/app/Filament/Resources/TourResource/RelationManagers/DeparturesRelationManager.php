@@ -23,8 +23,8 @@ class DeparturesRelationManager extends RelationManager
     public function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\DatePicker::make('starts_on')->label('Начало')->required(),
-            Forms\Components\DatePicker::make('ends_on')->label('Окончание')->required(),
+            Forms\Components\DatePicker::make('starts_on')->label('Начало')->locale('ru')->required(),
+            Forms\Components\DatePicker::make('ends_on')->label('Окончание')->locale('ru')->required(),
             Forms\Components\TextInput::make('price_cents')
                 ->label('Цена (копейки)')
                 ->numeric()

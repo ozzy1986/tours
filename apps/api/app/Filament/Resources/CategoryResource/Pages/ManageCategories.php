@@ -12,6 +12,8 @@ class ManageCategories extends ManageRecords
 {
     protected static string $resource = CategoryResource::class;
 
+    protected static ?string $title = 'Категории';
+
     protected function getHeaderActions(): array
     {
         return [
