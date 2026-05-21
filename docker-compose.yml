@@ -29,6 +29,9 @@ services:
     environment:
       HOST: 0.0.0.0
       PORT: 8001
+      USE_STUB: "false"
+      MODEL_ID: intfloat/multilingual-e5-small
+      EMBEDDING_DIM: "384"
     volumes:
       - models-cache:/root/.cache/huggingface
 

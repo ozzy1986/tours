@@ -22,8 +22,8 @@ class Settings(BaseSettings):
         "http://127.0.0.1:8000",
         "http://127.0.0.1:3000",
     ]
-    # Use hash embedder when HuggingFace is unreachable (set true for Laragon offline dev)
-    use_stub: bool = True
+    # Real HuggingFace model by default. Set USE_STUB=true only when HF is unreachable.
+    use_stub: bool = False
 
 
 settings = Settings()
