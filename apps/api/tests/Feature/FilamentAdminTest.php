@@ -10,9 +10,14 @@ use App\Models\Category;
 use App\Models\Tour;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
+
+beforeEach(function (): void {
+    Queue::fake();
+});
 
 it('serves filament admin login', function (): void {
     $this->get('/admin/login')->assertOk();

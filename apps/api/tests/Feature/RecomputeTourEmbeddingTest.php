@@ -19,6 +19,10 @@ beforeEach(function () {
 });
 
 it('skips embedding recompute on sqlite', function (): void {
+    if (config('database.default') === 'pgsql') {
+        $this->markTestSkipped('Sqlite-only behavior.');
+    }
+
     Http::fake();
 
     $tour = Tour::withoutEvents(fn () => Tour::factory()->create());

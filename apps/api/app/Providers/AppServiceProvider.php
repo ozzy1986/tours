@@ -13,7 +13,7 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->singleton(EmbeddingsClient::class, function ($app) {
+        $this->app->bind(EmbeddingsClient::class, function ($app) {
             $cfg = $app['config']->get('services.embeddings');
 
             return new EmbeddingsClient(

@@ -13,15 +13,18 @@ uses(RefreshDatabase::class);
 beforeEach(function () {
     (new \Database\Seeders\CategorySeeder)->run();
 
-    LlmSetting::current()->update([
-        'provider' => 'openai',
-        'base_url' => 'https://api.test/v1',
-        'api_key' => 'test-key',
-        'model' => 'gpt-test',
-        'temperature' => 0.5,
-        'max_tokens' => 1024,
-        'enabled' => true,
-    ]);
+    LlmSetting::query()->delete();
+
+    $setting = new LlmSetting();
+    $setting->id = 1;
+    $setting->provider = 'openai';
+    $setting->base_url = 'https://api.test/v1';
+    $setting->api_key = 'test-key';
+    $setting->model = 'gpt-test';
+    $setting->temperature = 0.5;
+    $setting->max_tokens = 1024;
+    $setting->enabled = true;
+    $setting->save();
 });
 
 it('normalizes llm json into tour shape', function (): void {
