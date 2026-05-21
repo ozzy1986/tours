@@ -4,7 +4,8 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   test: {
     environment: 'happy-dom',
-    include: ['**/*.{test,spec}.{ts,tsx}'],
+    include: ['lib/**/*.test.ts'],
+    exclude: ['**/node_modules/**', '**/dist/**', 'e2e/**'],
   },
   resolve: {
     alias: {

@@ -50,6 +50,8 @@ const navLinks = [
           type="button"
           class="ml-auto rounded-lg p-2 text-ink md:hidden"
           aria-label="Меню"
+          :aria-expanded="mobileNavOpen"
+          aria-controls="mobile-nav-panel"
           @click="mobileNavOpen = !mobileNavOpen"
         >
           <X v-if="mobileNavOpen" class="h-6 w-6" />
@@ -57,8 +59,12 @@ const navLinks = [
         </button>
       </div>
 
-      <div v-if="mobileNavOpen" class="border-t border-border px-4 py-4 md:hidden">
-        <nav class="mb-4 flex flex-col gap-2">
+      <div
+        v-if="mobileNavOpen"
+        id="mobile-nav-panel"
+        class="border-t border-border px-4 py-4 md:hidden"
+      >
+        <nav class="mb-4 flex flex-col gap-2" aria-label="Мобильная навигация">
           <a
             v-for="link in navLinks"
             :key="link.href"

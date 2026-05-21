@@ -11,13 +11,26 @@ import { filtersToQuery } from './filters'
 export const API_BASE =
   import.meta.env.PUBLIC_API_URL?.replace(/\/$/, '') || 'http://localhost:8000'
 
-class ApiError extends Error {
+export class ApiError extends Error {
   constructor(
     message: string,
     public status: number,
   ) {
     super(message)
     this.name = 'ApiError'
+  }
+}
+
+const JSON_HEADERS = { Accept: 'application/json' } as const
+
+async function apiFetch(url: string, init?: RequestInit): Promise<Response> {
+  try {
+    return await fetch(url, init)
+  } catch {
+    throw new ApiError(
+      'Не удалось связаться с API. Запустите сервер на порту 8000 и обновите страницу.',
+      503,
+    )
   }
 }
 
@@ -77,15 +90,15 @@ export async function fetchFeaturedTours(): Promise<TourSummary[]> {
 
 export async function fetchTours(filters: TourFiltersState): Promise<PaginatedTours> {
   const query = filtersToQuery(filters)
-  const res = await fetch(buildUrl('/api/tours', query), {
-    headers: { Accept: 'application/json' },
+  const res = await apiFetch(buildUrl('/api/tours', query), {
+    headers: JSON_HEADERS,
   })
   return parseJson<LaravelPaginated<TourSummary>>(res)
 }
 
 export async function fetchTourBySlug(slug: string): Promise<TourDetail | null> {
-  const res = await fetch(buildUrl(`/api/tours/${encodeURIComponent(slug)}`), {
-    headers: { Accept: 'application/json' },
+  const res = await apiFetch(buildUrl(`/api/tours/${encodeURIComponent(slug)}`), {
+    headers: JSON_HEADERS,
   })
   if (res.status === 404) return null
   const json = await parseJson<{ data?: TourDetail } & TourDetail>(res)
@@ -100,10 +113,10 @@ export interface SearchResult {
 }
 
 export async function searchTours(q: string, limit = 20): Promise<SearchResult> {
-  const res = await fetch(buildUrl('/api/search'), {
+  const res = await apiFetch(buildUrl('/api/search'), {
     method: 'POST',
     headers: {
-      Accept: 'application/json',
+      ...JSON_HEADERS,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ q, limit }),

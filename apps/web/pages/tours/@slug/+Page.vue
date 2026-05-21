@@ -48,13 +48,43 @@ function scrollNext() {
       Назад к каталогу
     </a>
 
-    <div class="grid gap-10 lg:grid-cols-2 lg:gap-12">
+    <div class="flex flex-wrap gap-2">
+      <span
+        v-for="cat in tour.categories"
+        :key="cat.id"
+        class="rounded-full bg-primary-muted px-3 py-0.5 text-xs font-semibold text-primary"
+      >
+        {{ cat.name }}
+      </span>
+    </div>
+
+    <h1 class="mt-3 font-display text-2xl font-extrabold sm:text-4xl">
+      {{ tour.title }}
+    </h1>
+    <p class="mt-2 text-lg text-muted">
+      {{ tour.summary }}
+    </p>
+
+    <div class="mt-4 flex flex-wrap items-center gap-4">
+      <span class="inline-flex items-center gap-2 text-sm font-medium">
+        <Clock class="h-4 w-4 text-accent" />
+        {{ formatDuration(tour.duration_days) }}
+      </span>
+      <PriceBadge
+        v-if="minPrice != null"
+        :cents="minPrice"
+        :currency="currency"
+      />
+      <span v-else class="text-sm text-muted">Цена по запросу</span>
+    </div>
+
+    <div class="mt-10 grid gap-10 lg:grid-cols-2 lg:gap-12">
       <div>
         <div v-if="photos.length" class="relative">
           <div ref="emblaRef" class="overflow-hidden rounded-2xl">
             <div class="flex">
               <div
-                v-for="photo in photos"
+                v-for="(photo, index) in photos"
                 :key="photo.id"
                 class="min-w-0 flex-[0_0_100%]"
               >
@@ -62,6 +92,8 @@ function scrollNext() {
                   :src="photo.url"
                   :alt="photo.alt || tour.title"
                   class="aspect-[4/3] w-full object-cover"
+                  :fetchpriority="index === 0 ? 'high' : 'auto'"
+                  :loading="index === 0 ? 'eager' : 'lazy'"
                 />
               </div>
             </div>
@@ -91,47 +123,10 @@ function scrollNext() {
         >
           Нет фотографий
         </div>
-
-        <section class="mt-8">
-          <h2 class="font-display text-lg font-bold">Маршрут на карте</h2>
-          <div class="mt-4">
-            <YandexRouteMap :route="tour.route_geojson" height="360px" />
-          </div>
-        </section>
       </div>
 
       <div>
-        <div class="flex flex-wrap gap-2">
-          <span
-            v-for="cat in tour.categories"
-            :key="cat.id"
-            class="rounded-full bg-primary-muted px-3 py-0.5 text-xs font-semibold text-primary"
-          >
-            {{ cat.name }}
-          </span>
-        </div>
-
-        <h1 class="mt-3 font-display text-2xl font-extrabold sm:text-4xl">
-          {{ tour.title }}
-        </h1>
-        <p class="mt-2 text-lg text-muted">
-          {{ tour.summary }}
-        </p>
-
-        <div class="mt-6 flex flex-wrap items-center gap-4">
-          <span class="inline-flex items-center gap-2 text-sm font-medium">
-            <Clock class="h-4 w-4 text-accent" />
-            {{ formatDuration(tour.duration_days) }}
-          </span>
-          <PriceBadge
-            v-if="minPrice != null"
-            :cents="minPrice"
-            :currency="currency"
-          />
-          <span v-else class="text-sm text-muted">Цена по запросу</span>
-        </div>
-
-        <div class="mt-8 whitespace-pre-wrap text-base leading-relaxed text-ink/90">
+        <div class="whitespace-pre-wrap text-base leading-relaxed text-ink/90">
           {{ tour.description }}
         </div>
 
@@ -178,5 +173,12 @@ function scrollNext() {
         </section>
       </div>
     </div>
+
+    <section class="mt-10">
+      <h2 class="font-display text-lg font-bold">Маршрут на карте</h2>
+      <div class="mt-4">
+        <YandexRouteMap :route="tour.route_geojson" height="360px" />
+      </div>
+    </section>
   </article>
 </template>

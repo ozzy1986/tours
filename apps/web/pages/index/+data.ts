@@ -1,4 +1,5 @@
 import { fetchCategories, fetchFeaturedTours } from '@/lib/api'
+import { rethrowPageError } from '@/lib/pageError'
 import type { Category, TourSummary } from '@/lib/types'
 
 export type Data = {
@@ -9,15 +10,19 @@ export type Data = {
 }
 
 export async function data(): Promise<Data> {
-  const [featured, categories] = await Promise.all([
-    fetchFeaturedTours(),
-    fetchCategories(),
-  ])
+  try {
+    const [featured, categories] = await Promise.all([
+      fetchFeaturedTours(),
+      fetchCategories(),
+    ])
 
-  return {
-    featured,
-    categories,
-    title: 'Главная',
-    description: 'Подбор туров с умным поиском, фильтрами и актуальными датами выездов.',
+    return {
+      featured,
+      categories,
+      title: 'Главная',
+      description: 'Подбор туров с умным поиском, фильтрами и актуальными датами выездов.',
+    }
+  } catch (err) {
+    rethrowPageError(err)
   }
 }

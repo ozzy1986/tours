@@ -178,7 +178,7 @@ watch(
           >
             {{ markerLabel(index) }}
           </span>
-          <span class="mt-1 max-w-[160px] truncate rounded bg-background/90 px-2 py-0.5 text-xs text-foreground shadow">
+          <span class="mt-1 max-w-[160px] truncate rounded bg-surface/95 px-2 py-0.5 text-xs text-ink shadow">
             {{ wp.name }}
           </span>
         </div>
@@ -192,19 +192,19 @@ watch(
     </div>
     <p
       v-if="routeLoading && yandexMapIsLoaded && coordinates.length > 1"
-      class="pointer-events-none absolute inset-x-0 bottom-0 bg-background/80 px-3 py-1.5 text-center text-xs text-muted"
+      class="pointer-events-none absolute inset-x-0 bottom-0 bg-surface/90 px-3 py-1.5 text-center text-xs text-muted"
     >
       Строим пеший маршрут…
     </p>
     <p
       v-else-if="!hasRouterKey && yandexMapIsLoaded && coordinates.length > 1"
-      class="pointer-events-none absolute inset-x-0 bottom-0 bg-background/80 px-3 py-1.5 text-center text-xs text-muted"
+      class="pointer-events-none absolute inset-x-0 bottom-0 bg-surface/90 px-3 py-1.5 text-center text-xs text-muted"
     >
       Пунктир — приблизительный маршрут. Для построения по пешеходным дорожкам подключите пакет «Матрица расстояний и построения маршрута» и укажите PUBLIC_ENV__PUBLIC_YANDEX_MAPS_ROUTER_KEY.
     </p>
     <p
       v-else-if="routeFallback && coordinates.length > 1"
-      class="pointer-events-none absolute inset-x-0 bottom-0 bg-background/80 px-3 py-1.5 text-center text-xs text-muted"
+      class="pointer-events-none absolute inset-x-0 bottom-0 bg-surface/90 px-3 py-1.5 text-center text-xs text-muted"
     >
       Пеший маршрут недоступен — показана прямая. Проверьте квоту/Referer ключа Router API в кабинете Яндекса.
     </p>

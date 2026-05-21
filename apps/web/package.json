@@ -7,9 +7,13 @@
     "dev": "vike dev --port 3000 --host",
     "build": "vike build",
     "preview": "vike preview --port 3000",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "test:e2e:ci": "npm run build && playwright test"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.2.5",
+    "@fontsource/manrope": "^5.2.5",
     "@tailwindcss/vite": "^4.0.0",
     "embla-carousel-vue": "^8.3.0",
     "lucide-vue-next": "^0.460.0",
@@ -20,6 +24,7 @@
     "vue-yandex-maps": "^3.0.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@types/node": "^22.10.0",
     "@vitejs/plugin-vue": "^5.2.1",
     "@vue/test-utils": "^2.4.6",
