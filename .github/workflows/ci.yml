@@ -103,6 +103,9 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Build and smoke e2e
         working-directory: apps/web
+        env:
+          CI: true
+          PLAYWRIGHT_CHANNEL: chromium
         run: npm run test:e2e:ci
 
   embeddings:
