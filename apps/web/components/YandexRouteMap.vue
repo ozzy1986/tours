@@ -24,7 +24,7 @@ const coordinates = computed(() => extractRouteCoordinates(props.route))
 const center = computed(() => routeCenter(coordinates.value))
 
 const mapFailed = computed(
-  () => hasKey && yandexMapLoadStatus.value === 'error' && Boolean(yandexMapLoadError.value),
+  () => hasKey && Boolean(yandexMapLoadError.value),
 )
 
 function formatLoadError(err: unknown): string {
