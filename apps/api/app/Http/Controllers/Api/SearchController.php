@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
 class SearchController extends Controller
@@ -41,11 +42,22 @@ class SearchController extends Controller
 
         try {
             $vectors = $client->embed([$query], prefix: 'query');
-        } catch (EmbeddingsException) {
+        } catch (EmbeddingsException $e) {
+            // Embeddings service responded to the health probe but failed on
+            // the actual /embed call (transient model error, network blip).
+            // Quietly degrade to keyword search instead of bubbling a 503 to
+            // the UI — the user still gets relevant tours.
+            Log::warning('Embeddings call failed, falling back to keyword search', [
+                'query' => $query,
+                'error' => $e->getMessage(),
+            ]);
+
+            $tours = $this->keywordSearch($query, $limit);
+
             return response()->json([
-                'message' => 'Semantic search is temporarily unavailable. Try filter-based search instead.',
-                'fallback' => $this->resolveSummaries($this->keywordSearch($query, $limit)),
-            ], 503);
+                'data' => $this->resolveSummaries($tours),
+                'meta' => ['query' => $query, 'mode' => 'keyword', 'count' => $tours->count()],
+            ]);
         }
 
         if (! $this->supportsVectorSearch()) {

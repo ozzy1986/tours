@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,11 +9,30 @@ from fastapi.responses import RedirectResponse
 
 from .auth import require_api_key
 from .config import settings
-from .model import Embedder, get_embedder
+from .model import Embedder, SentenceTransformerEmbedder, get_embedder
 from .schemas import EmbedRequest, EmbedResponse, HealthResponse
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("embeddings")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Eagerly load the model so /healthz reflects the real state and the
+    first user request does not pay the ~5s load cost.
+    """
+    embedder = get_embedder()
+    if isinstance(embedder, SentenceTransformerEmbedder):
+        ok = embedder.preload()
+        if ok:
+            log.info("Embeddings model is ready: %s", settings.resolved_model_path())
+        else:
+            log.error(
+                "Embeddings model failed to load (%s). Service stays up; "
+                "/healthz will report model_loaded=false so callers fall back to keyword search.",
+                embedder.load_error,
+            )
+    yield
 
 
 def create_app() -> FastAPI:
@@ -20,6 +40,7 @@ def create_app() -> FastAPI:
         title="Tours embeddings service",
         version="0.1.0",
         description="multilingual-e5-small embeddings for Russian/English text",
+        lifespan=lifespan,
     )
 
     app.add_middleware(

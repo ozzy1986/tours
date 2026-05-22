@@ -13,7 +13,11 @@ class EmbeddingsClient
 {
     private const string HEALTH_CACHE_KEY = 'embeddings:health';
 
-    private const int HEALTH_CACHE_TTL = 60;
+    /** TTL for a confirmed healthy state. */
+    private const int HEALTH_CACHE_TTL_OK = 60;
+
+    /** Shorter TTL for a degraded state so the service recovers within seconds of being fixed. */
+    private const int HEALTH_CACHE_TTL_DEGRADED = 5;
 
     public function __construct(
         private readonly string $baseUrl,
@@ -80,42 +84,62 @@ class EmbeddingsClient
     }
 
     /**
-     * True when the embeddings service produces real semantic vectors.
-     * Stub mode (hash-based vectors) yields meaningless similarities, so callers
-     * should skip vector ranking and rely on keyword search instead.
+     * True when the embeddings service produces real semantic vectors AND the
+     * model is actually loaded. Stub mode (hash-based vectors) and "not yet
+     * loaded" states both yield useless similarities, so callers must skip
+     * vector ranking and rely on keyword search instead.
      */
     public function isSemantic(): bool
     {
         $health = $this->health();
 
-        return ($health['ok'] ?? false) === true && ($health['use_stub'] ?? true) === false;
+        return ($health['ok'] ?? false) === true
+            && ($health['use_stub'] ?? true) === false
+            && ($health['model_loaded'] ?? false) === true;
     }
 
-    /** @return array{ok: bool, use_stub: bool} */
+    /** @return array{ok: bool, use_stub: bool, model_loaded: bool} */
     private function health(): array
     {
-        /** @var array{ok: bool, use_stub: bool} */
-        return Cache::remember(self::HEALTH_CACHE_KEY, self::HEALTH_CACHE_TTL, function (): array {
-            try {
-                $response = Http::timeout(3)
-                    ->acceptJson()
-                    ->get(rtrim($this->baseUrl, '/') . '/healthz');
-            } catch (Throwable $e) {
-                Log::warning('Embeddings health check failed', ['error' => $e->getMessage()]);
+        /** @var array{ok: bool, use_stub: bool, model_loaded: bool}|null $cached */
+        $cached = Cache::get(self::HEALTH_CACHE_KEY);
+        if (is_array($cached)) {
+            return $cached;
+        }
 
-                return ['ok' => false, 'use_stub' => true];
-            }
+        $health = $this->fetchHealth();
+        $ttl = $health['ok'] && $health['model_loaded'] && ! $health['use_stub']
+            ? self::HEALTH_CACHE_TTL_OK
+            : self::HEALTH_CACHE_TTL_DEGRADED;
 
-            if (! $response->successful()) {
-                return ['ok' => false, 'use_stub' => true];
-            }
+        Cache::put(self::HEALTH_CACHE_KEY, $health, $ttl);
 
-            return [
-                'ok' => true,
-                // Older service versions don't expose the flag; assume stub to be safe.
-                'use_stub' => (bool) ($response->json('use_stub') ?? true),
-            ];
-        });
+        return $health;
+    }
+
+    /** @return array{ok: bool, use_stub: bool, model_loaded: bool} */
+    private function fetchHealth(): array
+    {
+        try {
+            $response = Http::timeout(3)
+                ->acceptJson()
+                ->get(rtrim($this->baseUrl, '/') . '/healthz');
+        } catch (Throwable $e) {
+            Log::warning('Embeddings health check failed', ['error' => $e->getMessage()]);
+
+            return ['ok' => false, 'use_stub' => true, 'model_loaded' => false];
+        }
+
+        if (! $response->successful()) {
+            return ['ok' => false, 'use_stub' => true, 'model_loaded' => false];
+        }
+
+        return [
+            'ok' => true,
+            // Older service versions don't expose the flags; assume worst case.
+            'use_stub' => (bool) ($response->json('use_stub') ?? true),
+            'model_loaded' => (bool) ($response->json('model_loaded') ?? false),
+        ];
     }
 
     /** @param  array<int, float>  $vector */

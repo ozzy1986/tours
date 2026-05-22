@@ -60,7 +60,7 @@ it('returns semantic search results when embeddings succeed', function () {
         ->assertJsonPath('meta.query', 'zzzyyyxqw semantic only');
 });
 
-it('returns fallback results when embeddings fail', function () {
+it('silently falls back to keyword results when the /embed call fails', function () {
     Http::fake([
         'embeddings.test/healthz' => Http::response([
             'status' => 'ok',
@@ -79,13 +79,39 @@ it('returns fallback results when embeddings fail', function () {
         'published_at' => now(),
     ]));
 
-    $response = $this->postJson('/api/search', ['q' => 'beach']);
+    $this->postJson('/api/search', ['q' => 'beach'])
+        ->assertOk()
+        ->assertJsonPath('meta.mode', 'keyword')
+        ->assertJsonPath('meta.query', 'beach')
+        ->assertJsonPath('data.0.title', 'Seaside Escape');
+});
 
-    $response->assertStatus(503)
-        ->assertJsonPath('meta', null)
-        ->assertJsonCount(1, 'fallback');
+it('treats model_loaded=false as non-semantic and uses keyword search', function () {
+    Http::fake([
+        'embeddings.test/healthz' => Http::response([
+            'status' => 'ok',
+            'model' => 'intfloat/multilingual-e5-small',
+            'dim' => 384,
+            'model_loaded' => false,
+            'use_stub' => false,
+        ], 200),
+    ]);
 
-    expect($response->json('fallback.0.title'))->toBe('Seaside Escape');
+    Tour::withoutEvents(fn () => Tour::factory()->create([
+        'title' => 'Seaside Escape',
+        'summary' => 'Relaxing beach holiday package.',
+        'description' => 'Full beach description.',
+        'published_at' => now(),
+    ]));
+
+    $this->postJson('/api/search', ['q' => 'beach'])
+        ->assertOk()
+        ->assertJsonPath('meta.mode', 'keyword')
+        ->assertJsonPath('data.0.title', 'Seaside Escape');
+
+    Http::assertNotSent(function ($request) {
+        return str_contains($request->url(), '/embed?');
+    });
 });
 
 it('returns crimea tour first for lowercase Cyrillic query крым', function () {
