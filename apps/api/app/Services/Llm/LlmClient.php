@@ -22,7 +22,9 @@ class LlmClient
     {
         // Laragon/PHP default max_execution_time is 30s; local LLM calls need several minutes.
         $timeout = (int) config('services.llm.timeout', 600);
-        @set_time_limit($timeout + 60);
+        $limit = $timeout + 60;
+        @ini_set('max_execution_time', (string) $limit);
+        @set_time_limit($limit);
 
         $cfg = $this->resolveConfig();
 
