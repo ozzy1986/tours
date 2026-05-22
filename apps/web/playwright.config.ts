@@ -43,7 +43,7 @@ export default defineConfig({
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
       env: {
-        PUBLIC_API_URL: mockApiUrl,
+        PUBLIC_ENV__PUBLIC_API_URL: mockApiUrl,
       },
     },
   ],

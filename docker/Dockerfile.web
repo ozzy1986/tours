@@ -23,8 +23,8 @@ RUN npm ci --no-audit --no-fund
 
 COPY . .
 
-ARG PUBLIC_API_URL=http://localhost:8000
-ENV PUBLIC_API_URL=${PUBLIC_API_URL}
+ARG PUBLIC_ENV__PUBLIC_API_URL=http://localhost:8000
+ENV PUBLIC_ENV__PUBLIC_API_URL=${PUBLIC_ENV__PUBLIC_API_URL}
 
 RUN npm run build
 

@@ -105,7 +105,7 @@ services:
     depends_on:
       - api
     environment:
-      PUBLIC_API_URL: http://api:8000
+      PUBLIC_ENV__PUBLIC_API_URL: http://api:8000
     ports:
       - "3000:3000"
     volumes:
@@ -121,7 +121,7 @@ services:
     depends_on:
       - api
     environment:
-      PUBLIC_API_URL: http://api:8000
+      PUBLIC_ENV__PUBLIC_API_URL: http://api:8000
     ports:
       - "3000:3000"
 

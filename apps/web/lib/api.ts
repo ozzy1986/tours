@@ -9,7 +9,8 @@ import type {
 import { filtersToQuery } from './filters'
 
 export const API_BASE =
-  import.meta.env.PUBLIC_API_URL?.replace(/\/$/, '') || 'http://localhost:8000'
+  import.meta.env.PUBLIC_ENV__PUBLIC_API_URL?.replace(/\/$/, '') ||
+  'http://localhost:8000'
 
 export class ApiError extends Error {
   constructor(

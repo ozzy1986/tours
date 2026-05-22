@@ -40,57 +40,125 @@ docker/                Dockerfile.api, Dockerfile.web
 Makefile               команды make up/setup/api/web/embeddings
 ```
 
-## Локальный запуск (Laragon / Windows)
+## Как запустить проект
 
-Нужны PHP 8.3+, Composer, Node 22+, Python 3.11+ и PostgreSQL 15 с возможностью `CREATE EXTENSION vector`.
+Проект — три процесса плюс PostgreSQL. Без любого из них часть функций отвалится: каталог без API, поиск без embeddings, карты без ключа Яндекса.
+
+| Сервис | Порт | Назначение |
+|--------|------|------------|
+| PostgreSQL 15 + pgvector | 5432 | БД туров и векторов |
+| `apps/api` (Laravel) | 8000 | REST API, Filament `/admin` |
+| `services/embeddings` (FastAPI) | 8001 | Семантические векторы для поиска |
+| `apps/web` (Vike) | 3000 | Публичный SSR-сайт |
+
+**После старта:** сайт — http://localhost:3000, админка — http://localhost:8000/admin (`admin@example.com` / `password`). Открывайте сайт именно как `localhost`, не `127.0.0.1` — иначе Яндекс.Карты могут не загрузиться ([квикстарт](https://yandex.ru/maps-api/docs/js-api/common/quickstart.html#localhost)).
+
+### Требования
+
+- PHP 8.3+, Composer
+- Node.js 22+, npm
+- Python 3.11+ (для embeddings)
+- PostgreSQL 15 с правом `CREATE EXTENSION vector` (Laragon, Docker или отдельная установка)
+
+### 1. База данных (один раз)
 
 ```sql
 CREATE DATABASE tours;
 \c tours
-CREATE EXTENSION vector;
+CREATE EXTENSION IF NOT EXISTS vector;
 ```
 
-API:
+Учётные данные по умолчанию в примерах: `postgres` / `root`, БД `tours` — поправьте в `apps/api/.env`, если у вас иначе.
+
+### 2. Первичная настройка (один раз)
+
+Из корня репозитория:
 
 ```bash
+make install
+make setup
+```
+
+Или вручную:
+
+```bash
+# API
 cd apps/api
-copy .env.example .env
+copy .env.example .env          # Windows
+# cp .env.example .env          # Linux / macOS
 composer install
 php artisan key:generate
 php artisan migrate --seed
-php artisan serve --port=8000
-```
 
-Embeddings:
-
-```bash
-cd services/embeddings
-python -m venv .venv
-.venv\Scripts\pip install -r requirements.txt
-uvicorn app.main:app --host 127.0.0.1 --port 8001
-```
-
-После сидов пересчитайте векторы (особенно при смене `USE_STUB`):
-
-```bash
-cd apps/api && php artisan tours:embed-all --sync
-```
-
-Фронт:
-
-```bash
-cd apps/web
+# Web
+cd ../web
 copy .env.example .env
 npm install
-npm run build   # один раз на Windows, иначе dev падает на +config.ts.build
-npm run dev
+npm run build                   # обязательно один раз на Windows
+
+# Embeddings
+cd ../../services/embeddings
+python -m venv .venv
+.venv\Scripts\pip install -r requirements.txt   # Windows
+# source .venv/bin/activate && pip install -r requirements.txt   # Linux / macOS
+copy .env.example .env
 ```
 
-Сайт открывается на http://localhost:3000, админка — http://localhost:8000/admin, логин `admin@example.com` / `password`. Для Яндекс.Карт в Referer ключа укажите `localhost` и не открывайте сайт как `127.0.0.1` — см. [квикстарт](https://yandex.ru/maps-api/docs/js-api/common/quickstart.html#localhost).
+В `apps/web/.env` укажите `PUBLIC_ENV__PUBLIC_API_URL=http://127.0.0.1:8000` (или `http://localhost:8000`) и при необходимости ключи Яндекс.Карт.
 
-Из корня репозитория то же самое делается через `make install && make setup`, потом `make api`, `make embeddings`, `make web` в отдельных терминалах.
+**Семантический поиск:** в репозитории уже лежит локальная модель `services/embeddings/models/intfloat-multilingual-e5-small`. В `services/embeddings/.env` должно быть `USE_STUB=false` и `MODEL_ID=models/intfloat-multilingual-e5-small` (как в `.env.example`). Если папки модели нет — см. раздел [LLM и embeddings](#llm-и-embeddings).
 
-## Docker
+Пересчёт векторов туров (нужен запущенный embeddings на :8001):
+
+```bash
+cd apps/api
+php artisan tours:embed-all --sync
+```
+
+### 3. Ежедневный запуск — три терминала
+
+Запускайте **все три** процесса. Порядок: сначала embeddings (модель грузится ~20–30 с), затем API, затем web.
+
+**Терминал 1 — embeddings**
+
+```bash
+make embeddings
+# или: cd services/embeddings && .venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8001 --reload
+```
+
+Дождитесь в логе строки `Embeddings model is ready` и `Uvicorn running on http://127.0.0.1:8001`. Проверка:
+
+```bash
+curl http://127.0.0.1:8001/healthz
+```
+
+Ожидается `"model_loaded":true,"use_stub":false`.
+
+**Терминал 2 — API**
+
+```bash
+make api
+# или: cd apps/api && php artisan serve --host=127.0.0.1 --port=8000
+```
+
+**Терминал 3 — фронт**
+
+```bash
+make web
+# или: cd apps/web && npm run dev
+```
+
+Проверка поиска:
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/search -H "Content-Type: application/json" -d "{\"q\":\"Крым море\",\"limit\":3}"
+```
+
+В ответе `meta.mode` должен быть `semantic` или `hybrid`, без HTTP 503.
+
+### 4. Запуск через Docker
+
+Всё в одном compose (БД, API, очередь, embeddings, web):
 
 ```bash
 make up
@@ -98,19 +166,47 @@ make setup
 cd apps/api && php artisan tours:embed-all --sync
 ```
 
-Compose поднимает PostgreSQL с pgvector, FastAPI-сервис эмбеддингов (по умолчанию stub), Laravel API на :8000, воркер очереди и Vike dev-сервер на :3000 с bind mount. Для собранного фронта вместо dev-сервера есть профиль `production`:
+Сервис `embeddings` монтирует `./services/embeddings/models` и стартует с `USE_STUB=false` и `HF_HUB_OFFLINE=1` — интернет для модели не нужен, если каталог `models/intfloat-multilingual-e5-small` на месте.
+
+Полезные команды:
+
+```bash
+make logs          # логи всех контейнеров
+make down          # остановить
+docker compose ps  # статус
+```
+
+Собранный фронт вместо dev-сервера:
 
 ```bash
 docker compose --profile production up -d --build web-prod
 ```
 
-Очередь нужна для асинхронных embedding-джобов. Если воркер не запущен — поставьте `QUEUE_CONNECTION=sync` в `apps/api/.env`. APP_KEY перед первым запросом: `cd apps/api && php artisan key:generate --show`.
+**APP_KEY:** перед первым запросом к API в Docker сгенерируйте ключ: `cd apps/api && php artisan key:generate --show` и пропишите в `.env` или в `docker compose` через переменную `APP_KEY`.
+
+Очередь Laravel (`RecomputeTourEmbedding`) в compose уже крутится сервисом `queue`. Локально без Docker, если воркер не запущен, поставьте в `apps/api/.env` значение `QUEUE_CONNECTION=sync`.
+
+### Частые проблемы
+
+| Симптом | Что сделать |
+|---------|-------------|
+| На `/search` жёлтый баннер «семантический поиск недоступен» | Проверьте `curl http://127.0.0.1:8001/healthz` — нужно `model_loaded:true`. Перезапустите embeddings после смены кода или `.env`. |
+| Embeddings долго «висит» при старте | Нормально: модель ~450 МБ грузится при старте один раз. |
+| `npm run dev` падает на `+config.ts` | Выполните `cd apps/web && npm run build` один раз. |
+| Поиск только `keyword`, векторы пустые | Запустите `php artisan tours:embed-all --sync` при работающем :8001. |
+| Карта не грузится | Ключ в `apps/web/.env`, Referer с `localhost`, URL сайта — `http://localhost:3000`. |
 
 ## LLM и embeddings
 
 LLM-генерация опциональна. Без ключа всё работает на демо-сидах. Чтобы включить — зайдите в `/admin` → **Настройки LLM**, укажите provider, base URL, ключ и модель (OpenAI, Ollama, LM Studio), проверьте подключение и используйте кнопку «Сгенерировать через LLM» в форме тура. Fallback-значения можно задать в `apps/api/.env` (`LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`).
 
-Embeddings по умолчанию работают в stub-режиме (`USE_STUB=true`) — hash-вектор 384 dim без сети. Для реальной семантики поставьте `USE_STUB=false` в `services/embeddings/.env` (нужен доступ к huggingface.co) и пересчитайте векторы. Эндпоинт `POST /embed` можно защитить заголовком `X-Api-Key`, прописав `EMBEDDINGS_API_KEY` в API и в сервисе.
+**Embeddings (семантический поиск):**
+
+- Рекомендуется локальная модель в `services/embeddings/models/intfloat-multilingual-e5-small` и `USE_STUB=false` в `services/embeddings/.env` — без обращения к HuggingFace после клонирования репозитория.
+- Если каталога модели нет: скачайте `intfloat/multilingual-e5-small` (нужен доступ к huggingface.co) или скопируйте из кэша HF: `make embeddings-model` (Windows, скрипт `services/embeddings/scripts/install-local-model.ps1`).
+- Оффлайн-заглушка: `USE_STUB=true` — hash-векторы без семантики; поиск останется только по ключевым словам.
+- После смены `USE_STUB` или модели: `php artisan tours:embed-all --sync`.
+- Опционально: `EMBEDDINGS_API_KEY` в обоих `.env` (API и embeddings) — тогда `POST /embed` требует заголовок `X-Api-Key`.
 
 ## API
 

@@ -106,7 +106,7 @@ jobs:
         env:
           CI: true
           PLAYWRIGHT_CHANNEL: chromium
-          PUBLIC_API_URL: http://127.0.0.1:8000
+          PUBLIC_ENV__PUBLIC_API_URL: http://127.0.0.1:8000
           MOCK_API_HOST: 127.0.0.1
           MOCK_API_PORT: '8000'
         run: npm run test:e2e:ci
