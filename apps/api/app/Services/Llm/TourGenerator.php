@@ -59,7 +59,29 @@ TXT;
             ['role' => 'user', 'content' => $user],
         ], expectsJson: true);
 
+        $this->assertHasContent($data);
+
         return $this->normalize($data, array_keys($categories));
+    }
+
+    /**
+     * Guard against the LLM returning `{}` or completely off-schema JSON, which would
+     * otherwise silently produce an empty "Новый тур" draft.
+     *
+     * @param  array<string,mixed>  $raw
+     */
+    private function assertHasContent(array $raw): void
+    {
+        $title = trim((string) ($raw['title'] ?? ''));
+        $description = trim((string) ($raw['description'] ?? ''));
+        $summary = trim((string) ($raw['summary'] ?? ''));
+
+        if ($title === '' || ($description === '' && $summary === '')) {
+            throw new LlmException(
+                'LLM вернул пустой/неполный JSON. Попробуйте другую модель или упростите промпт. '
+                . 'Получено: ' . substr(json_encode($raw, JSON_UNESCAPED_UNICODE) ?: '', 0, 200)
+            );
+        }
     }
 
     /**

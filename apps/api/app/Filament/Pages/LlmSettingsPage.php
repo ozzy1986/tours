@@ -77,7 +77,7 @@ class LlmSettingsPage extends Page implements HasForms
                             ->label('Ключ API')
                             ->password()
                             ->revealable()
-                            ->helperText('Оставьте ******** чтобы не менять существующий ключ'),
+                            ->helperText('Для Ollama не нужен. Оставьте ******** чтобы не менять существующий ключ.'),
                         Forms\Components\TextInput::make('model')
                             ->label('Модель')
                             ->required()

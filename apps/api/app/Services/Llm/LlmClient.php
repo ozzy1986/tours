@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Llm;
 
 use App\Models\LlmSetting;
+use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
 use Throwable;
 
@@ -21,26 +22,32 @@ class LlmClient
     {
         $cfg = $this->resolveConfig();
 
-        if (! $cfg['enabled'] || blank($cfg['api_key'])) {
-            throw new LlmException('LLM integration is not configured. Open Filament > Настройки LLM.');
+        if (! $cfg['enabled']) {
+            throw new LlmException('LLM integration is disabled. Open Filament > Настройки LLM.');
         }
+
+        // For deterministic structured output keep temperature low regardless of UI setting.
+        $temp = $temperature ?? ($expectsJson ? min((float) $cfg['temperature'], 0.2) : (float) $cfg['temperature']);
 
         $payload = [
             'model' => $cfg['model'],
-            'temperature' => $temperature ?? $cfg['temperature'],
+            'temperature' => $temp,
             'max_tokens' => $maxTokens ?? $cfg['max_tokens'],
             'messages' => $messages,
+            'stream' => false,
         ];
 
         if ($expectsJson) {
             $payload['response_format'] = ['type' => 'json_object'];
         }
 
+        if ($cfg['provider'] === 'ollama') {
+            // Keep the model warm between calls to avoid 100+ s reloads on cold start.
+            $payload['keep_alive'] = '15m';
+        }
+
         try {
-            $response = Http::withToken($cfg['api_key'])
-                ->timeout(60)
-                ->acceptJson()
-                ->asJson()
+            $response = $this->httpClient($cfg)
                 ->post(rtrim($cfg['base_url'], '/') . '/chat/completions', $payload);
         } catch (Throwable $e) {
             throw new LlmException("LLM request failed: {$e->getMessage()}", 0, $e);
@@ -52,7 +59,7 @@ class LlmClient
 
         $content = $response->json('choices.0.message.content');
 
-        if (! is_string($content) || $content === '') {
+        if (! is_string($content) || trim($content) === '') {
             throw new LlmException('LLM returned empty content');
         }
 
@@ -60,13 +67,7 @@ class LlmClient
             return $content;
         }
 
-        $parsed = json_decode($content, associative: true);
-
-        if (! is_array($parsed)) {
-            throw new LlmException('LLM JSON output could not be parsed: ' . substr($content, 0, 200));
-        }
-
-        return $parsed;
+        return $this->decodeJson($content);
     }
 
     /**
@@ -83,13 +84,75 @@ class LlmClient
     }
 
     /**
+     * Build the HTTP client. Skips Authorization for providers that don't need it (Ollama).
+     *
+     * @param  array{provider:string, base_url:string, api_key:?string, ...}  $cfg
+     */
+    private function httpClient(array $cfg): PendingRequest
+    {
+        $client = Http::timeout((int) config('services.llm.timeout', 600))
+            ->connectTimeout(15)
+            ->acceptJson()
+            ->asJson();
+
+        if (filled($cfg['api_key'])) {
+            $client = $client->withToken($cfg['api_key']);
+        }
+
+        return $client;
+    }
+
+    /**
+     * Decode LLM JSON response, tolerating markdown code fences and surrounding noise.
+     *
+     * @return array<string, mixed>
+     */
+    private function decodeJson(string $content): array
+    {
+        $cleaned = $this->stripJsonNoise($content);
+
+        $parsed = json_decode($cleaned, associative: true);
+
+        if (! is_array($parsed)) {
+            throw new LlmException(
+                'LLM JSON output could not be parsed. Raw start: ' . substr(trim($content), 0, 200)
+            );
+        }
+
+        return $parsed;
+    }
+
+    private function stripJsonNoise(string $raw): string
+    {
+        $s = trim($raw);
+
+        // Strip ```json ... ``` or ``` ... ``` wrappers some small models add despite instructions.
+        if (str_starts_with($s, '```')) {
+            $s = preg_replace('/^```(?:json|JSON)?\s*\n?/', '', $s) ?? $s;
+            $s = preg_replace('/\n?```\s*$/', '', $s) ?? $s;
+            $s = trim($s);
+        }
+
+        if ($s === '' || $s[0] === '{' || $s[0] === '[') {
+            return $s;
+        }
+
+        // Last-resort fallback: extract first {...} or [...] block from a noisy reply.
+        if (preg_match('/(\{.*\}|\[.*\])/s', $s, $m)) {
+            return $m[1];
+        }
+
+        return $s;
+    }
+
+    /**
      * @return array{provider:string, base_url:string, api_key:?string, model:string, temperature:float, max_tokens:int, enabled:bool}
      */
     private function resolveConfig(): array
     {
         $setting = LlmSetting::current();
 
-        if ($setting->enabled && filled($setting->api_key)) {
+        if ($setting->isUsable()) {
             return [
                 'provider' => $setting->provider,
                 'base_url' => $setting->base_url,
@@ -102,15 +165,17 @@ class LlmClient
         }
 
         $fallback = config('services.llm');
+        $provider = $fallback['provider'];
+        $key = $fallback['api_key'];
 
         return [
-            'provider' => $fallback['provider'],
+            'provider' => $provider,
             'base_url' => $fallback['base_url'],
-            'api_key' => $fallback['api_key'],
+            'api_key' => $key,
             'model' => $fallback['model'],
             'temperature' => (float) $fallback['temperature'],
             'max_tokens' => (int) $fallback['max_tokens'],
-            'enabled' => filled($fallback['api_key']),
+            'enabled' => $provider === 'ollama' || filled($key),
         ];
     }
 }

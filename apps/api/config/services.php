@@ -49,6 +49,7 @@ return [
         'model' => env('LLM_MODEL', 'gpt-4o-mini'),
         'temperature' => (float) env('LLM_TEMPERATURE', 0.7),
         'max_tokens' => (int) env('LLM_MAX_TOKENS', 2048),
+        'timeout' => (int) env('LLM_TIMEOUT', 600),
     ],
 
 ];

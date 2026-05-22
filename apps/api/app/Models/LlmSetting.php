@@ -45,6 +45,11 @@ class LlmSetting extends Model
 
     public function isUsable(): bool
     {
-        return $this->enabled && filled($this->api_key);
+        if (! $this->enabled) {
+            return false;
+        }
+
+        // Ollama (local) does not require an API key; remote providers do.
+        return $this->provider === 'ollama' || filled($this->api_key);
     }
 }
