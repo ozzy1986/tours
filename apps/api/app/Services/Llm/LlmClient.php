@@ -20,6 +20,10 @@ class LlmClient
      */
     public function chat(array $messages, bool $expectsJson = false, ?float $temperature = null, ?int $maxTokens = null): string|array
     {
+        // Laragon/PHP default max_execution_time is 30s; local LLM calls need several minutes.
+        $timeout = (int) config('services.llm.timeout', 600);
+        @set_time_limit($timeout + 60);
+
         $cfg = $this->resolveConfig();
 
         if (! $cfg['enabled']) {

@@ -133,6 +133,8 @@ class LlmSettingsPage extends Page implements HasForms
     {
         $this->save();
 
+        @set_time_limit((int) config('services.llm.timeout', 600) + 60);
+
         try {
             $reply = $client->ping();
             Notification::make()

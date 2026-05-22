@@ -50,6 +50,9 @@ class CreateTour extends CreateRecord
                         ->maxValue(21),
                 ])
                 ->action(function (array $data, TourGenerator $generator): void {
+                    // Livewire/Filament runs in the same PHP request; extend beyond default 30s.
+                    @set_time_limit((int) config('services.llm.timeout', 600) + 60);
+
                     try {
                         $result = $generator->generate(
                             $data['prompt'],
