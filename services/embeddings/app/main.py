@@ -41,6 +41,7 @@ def create_app() -> FastAPI:
             model=settings.model_id,
             dim=settings.embedding_dim,
             model_loaded=embedder.is_loaded,
+            use_stub=settings.use_stub,
         )
 
     @app.post("/embed", response_model=EmbedResponse, dependencies=[Depends(require_api_key)])

@@ -8,6 +8,8 @@ def test_healthz(client) -> None:
     assert body["status"] == "ok"
     assert body["dim"] == 384
     assert body["model_loaded"] is True
+    assert "use_stub" in body
+    assert isinstance(body["use_stub"], bool)
 
 
 def test_root_redirects(client) -> None:

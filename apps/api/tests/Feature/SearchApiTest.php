@@ -15,14 +15,32 @@ beforeEach(function () {
         'services.embeddings.dim' => 384,
         'services.embeddings.timeout' => 5,
     ]);
+
+    cache()->forget('embeddings:health');
 });
+
+/**
+ * Default fake: the embeddings service is healthy and runs a real model.
+ * Individual tests can replace it via Http::fake() before issuing requests.
+ */
+function fakeSemanticEmbeddings(array $vector): void
+{
+    Http::fake([
+        'embeddings.test/healthz' => Http::response([
+            'status' => 'ok',
+            'model' => 'intfloat/multilingual-e5-small',
+            'dim' => 384,
+            'model_loaded' => true,
+            'use_stub' => false,
+        ], 200),
+        'embeddings.test/embed*' => Http::response(['vectors' => [$vector]], 200),
+    ]);
+}
 
 it('returns semantic search results when embeddings succeed', function () {
     $vector = array_fill(0, 384, 0.1);
 
-    Http::fake([
-        'embeddings.test/embed*' => Http::response(['vectors' => [$vector]], 200),
-    ]);
+    fakeSemanticEmbeddings($vector);
 
     Tour::withoutEvents(fn () => Tour::factory()->create([
         'title' => 'Alpine Trek',
@@ -44,6 +62,13 @@ it('returns semantic search results when embeddings succeed', function () {
 
 it('returns fallback results when embeddings fail', function () {
     Http::fake([
+        'embeddings.test/healthz' => Http::response([
+            'status' => 'ok',
+            'model' => 'intfloat/multilingual-e5-small',
+            'dim' => 384,
+            'model_loaded' => true,
+            'use_stub' => false,
+        ], 200),
         'embeddings.test/embed*' => Http::response('unavailable', 503),
     ]);
 
@@ -66,9 +91,7 @@ it('returns fallback results when embeddings fail', function () {
 it('returns crimea tour first for lowercase Cyrillic query крым', function () {
     $vector = array_fill(0, 384, 0.1);
 
-    Http::fake([
-        'embeddings.test/embed*' => Http::response(['vectors' => [$vector]], 200),
-    ]);
+    fakeSemanticEmbeddings($vector);
 
     Tour::withoutEvents(function () {
         Tour::factory()->create([
@@ -106,9 +129,7 @@ it('returns crimea tour first for lowercase Cyrillic query крым', function (
 it('returns crimea tour first for Cyrillic query Крым', function () {
     $vector = array_fill(0, 384, 0.1);
 
-    Http::fake([
-        'embeddings.test/embed*' => Http::response(['vectors' => [$vector]], 200),
-    ]);
+    fakeSemanticEmbeddings($vector);
 
     Tour::withoutEvents(function () {
         Tour::factory()->create([
@@ -147,9 +168,7 @@ it('returns crimea tour first for Cyrillic query Крым', function () {
 });
 
 it('matches lowercase крым against capitalized tour titles', function () {
-    Http::fake([
-        'embeddings.test/embed*' => Http::response(['vectors' => [array_fill(0, 384, 0.1)]], 200),
-    ]);
+    fakeSemanticEmbeddings(array_fill(0, 384, 0.1));
 
     Tour::withoutEvents(fn () => Tour::factory()->create([
         'slug' => 'crimea-sevastopol',
@@ -167,4 +186,56 @@ it('matches lowercase крым against capitalized tour titles', function () {
             ? 'hybrid'
             : 'keyword')
         ->assertJsonCount(1, 'data');
+});
+
+it('skips vector search and returns empty for unmatched query when embeddings run in stub mode', function () {
+    Http::fake([
+        'embeddings.test/healthz' => Http::response([
+            'status' => 'ok',
+            'model' => 'stub',
+            'dim' => 384,
+            'model_loaded' => true,
+            'use_stub' => true,
+        ], 200),
+        'embeddings.test/embed*' => Http::response(
+            ['vectors' => [array_fill(0, 384, 0.1)]],
+            200,
+        ),
+    ]);
+
+    Tour::withoutEvents(fn () => Tour::factory()->create([
+        'title' => 'Зимний Байкал',
+        'summary' => 'Лёд, Ольхон и бурятское гостеприимство.',
+        'description' => 'Ледяные гроты и мыс Хобой.',
+        'published_at' => now(),
+    ]));
+
+    $response = $this->postJson('/api/search', ['q' => 'полетать на вертолёте']);
+
+    $response->assertOk()
+        ->assertJsonPath('meta.mode', 'keyword')
+        ->assertJsonPath('meta.count', 0)
+        ->assertJsonCount(0, 'data');
+
+    Http::assertNotSent(function ($request) {
+        return str_contains($request->url(), '/embed?');
+    });
+});
+
+it('falls back to keyword search when embeddings service is unreachable for health check', function () {
+    Http::fake([
+        'embeddings.test/*' => Http::response('down', 503),
+    ]);
+
+    Tour::withoutEvents(fn () => Tour::factory()->create([
+        'title' => 'Seaside Escape',
+        'summary' => 'Relaxing beach holiday package.',
+        'description' => 'Full beach description.',
+        'published_at' => now(),
+    ]));
+
+    $this->postJson('/api/search', ['q' => 'beach'])
+        ->assertOk()
+        ->assertJsonPath('meta.mode', 'keyword')
+        ->assertJsonPath('data.0.title', 'Seaside Escape');
 });

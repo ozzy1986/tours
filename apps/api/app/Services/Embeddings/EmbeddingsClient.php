@@ -4,12 +4,17 @@ declare(strict_types=1);
 
 namespace App\Services\Embeddings;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class EmbeddingsClient
 {
+    private const string HEALTH_CACHE_KEY = 'embeddings:health';
+
+    private const int HEALTH_CACHE_TTL = 60;
+
     public function __construct(
         private readonly string $baseUrl,
         private readonly int $dimension,
@@ -71,13 +76,46 @@ class EmbeddingsClient
 
     public function isHealthy(): bool
     {
-        try {
-            return Http::timeout(3)->get(rtrim($this->baseUrl, '/') . '/healthz')->successful();
-        } catch (Throwable $e) {
-            Log::warning('Embeddings health check failed', ['error' => $e->getMessage()]);
+        return ($this->health()['ok'] ?? false) === true;
+    }
 
-            return false;
-        }
+    /**
+     * True when the embeddings service produces real semantic vectors.
+     * Stub mode (hash-based vectors) yields meaningless similarities, so callers
+     * should skip vector ranking and rely on keyword search instead.
+     */
+    public function isSemantic(): bool
+    {
+        $health = $this->health();
+
+        return ($health['ok'] ?? false) === true && ($health['use_stub'] ?? true) === false;
+    }
+
+    /** @return array{ok: bool, use_stub: bool} */
+    private function health(): array
+    {
+        /** @var array{ok: bool, use_stub: bool} */
+        return Cache::remember(self::HEALTH_CACHE_KEY, self::HEALTH_CACHE_TTL, function (): array {
+            try {
+                $response = Http::timeout(3)
+                    ->acceptJson()
+                    ->get(rtrim($this->baseUrl, '/') . '/healthz');
+            } catch (Throwable $e) {
+                Log::warning('Embeddings health check failed', ['error' => $e->getMessage()]);
+
+                return ['ok' => false, 'use_stub' => true];
+            }
+
+            if (! $response->successful()) {
+                return ['ok' => false, 'use_stub' => true];
+            }
+
+            return [
+                'ok' => true,
+                // Older service versions don't expose the flag; assume stub to be safe.
+                'use_stub' => (bool) ($response->json('use_stub') ?? true),
+            ];
+        });
     }
 
     /** @param  array<int, float>  $vector */

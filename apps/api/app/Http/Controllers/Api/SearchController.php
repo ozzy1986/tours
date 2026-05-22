@@ -27,6 +27,18 @@ class SearchController extends Controller
         $query = (string) $request->validated('q');
         $limit = (int) $request->validated('limit', 20);
 
+        // Stub embeddings (hash vectors) yield meaningless cosine distances, so
+        // a "semantic" pure-vector search returns arbitrary tours. Skip the
+        // vector pipeline entirely until the service runs a real model.
+        if (! $client->isSemantic()) {
+            $tours = $this->keywordSearch($query, $limit);
+
+            return response()->json([
+                'data' => $this->resolveSummaries($tours),
+                'meta' => ['query' => $query, 'mode' => 'keyword', 'count' => $tours->count()],
+            ]);
+        }
+
         try {
             $vectors = $client->embed([$query], prefix: 'query');
         } catch (EmbeddingsException) {
@@ -153,12 +165,19 @@ class SearchController extends Controller
         return $this->publishedTourQuery()
             ->where(function ($q) use ($terms, $expr, $needle) {
                 foreach ($terms as $term) {
-                    $t = mb_strtolower($term, 'UTF-8');
-                    $q->orWhereRaw("{$expr} % ?", [$t])
-                        ->orWhereRaw("similarity({$expr}, ?) > 0.05", [$t]);
+                    $pattern = '%' . mb_strtolower($term, 'UTF-8') . '%';
+                    // Substring match per field — robust for short queries where
+                    // similarity() against the concatenated text falls below the
+                    // threshold (e.g. "крым" inside a 500-char description).
+                    $q->orWhere('title', 'ilike', $pattern)
+                        ->orWhere('summary', 'ilike', $pattern)
+                        ->orWhere('description', 'ilike', $pattern);
                 }
+                // Fuzzy fallback for typos/inflections: trigram similarity
+                // against the high-signal title only.
                 if ($needle !== '') {
-                    $q->orWhereRaw("similarity({$expr}, ?) > 0.05", [$needle]);
+                    $q->orWhereRaw('lower(title) % ?', [$needle])
+                        ->orWhereRaw('similarity(lower(title), ?) > 0.2', [$needle]);
                 }
             })
             ->selectRaw(

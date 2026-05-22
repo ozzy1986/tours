@@ -18,3 +18,6 @@ class HealthResponse(BaseModel):
     model: str
     dim: int
     model_loaded: bool
+    # True when the service uses StubHashEmbedder (no real semantics).
+    # Callers should skip vector-based ranking in this mode.
+    use_stub: bool
