@@ -2,9 +2,11 @@
 import { Menu, X } from 'lucide-vue-next'
 import { ref } from 'vue'
 import SearchBar from '@/components/SearchBar.vue'
+import { useSearchQueryFromUrl } from '@/lib/useSearchQueryFromUrl'
 import '@/assets/main.css'
 
 const mobileNavOpen = ref(false)
+const headerSearchQuery = useSearchQueryFromUrl()
 
 const navLinks = [
   { href: '/', label: 'Главная' },
@@ -75,7 +77,7 @@ const navLinks = [
             {{ link.label }}
           </a>
         </nav>
-        <SearchBar />
+        <SearchBar :model-value="headerSearchQuery" />
       </div>
     </header>
 

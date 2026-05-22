@@ -3,9 +3,11 @@ import { AlertCircle, Search } from 'lucide-vue-next'
 import { useData } from 'vike-vue/useData'
 import SearchBar from '@/components/SearchBar.vue'
 import TourCard from '@/components/TourCard.vue'
+import { useSearchPageResults } from '@/lib/useSearchPageResults'
 import type { Data } from './+data'
 
-const { query, tours, meta, fallback, message } = useData<Data>()
+const initial = useData<Data>()
+const { query, tours, meta, fallback, message, loading } = useSearchPageResults(initial)
 </script>
 
 <template>
@@ -14,7 +16,7 @@ const { query, tours, meta, fallback, message } = useData<Data>()
     <p class="mt-1 text-muted">Опишите желаемый отдых — подберём подходящие маршруты</p>
 
     <div class="mt-6 max-w-2xl">
-      <SearchBar :model-value="query" large />
+      <SearchBar :key="query" :model-value="query" large />
     </div>
 
     <div
@@ -32,6 +34,7 @@ const { query, tours, meta, fallback, message } = useData<Data>()
         Запрос: <strong class="text-ink">«{{ query }}»</strong>
         <span v-if="meta"> — {{ meta.count }} результатов</span>
         <span v-if="meta?.mode" class="text-accent"> ({{ meta.mode }})</span>
+        <span v-if="loading" class="text-muted"> — обновление…</span>
       </p>
 
       <div
@@ -41,7 +44,7 @@ const { query, tours, meta, fallback, message } = useData<Data>()
         <TourCard v-for="tour in tours" :key="tour.id" :tour="tour" />
       </div>
       <p
-        v-else
+        v-else-if="!loading"
         class="mt-8 rounded-2xl border border-dashed border-border p-12 text-center text-muted"
       >
         По этому запросу ничего не найдено. Попробуйте описать тур иначе или
