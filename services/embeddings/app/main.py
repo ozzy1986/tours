@@ -38,7 +38,7 @@ def create_app() -> FastAPI:
     def healthz(embedder: Embedder = Depends(get_embedder)) -> HealthResponse:
         return HealthResponse(
             status="ok",
-            model=settings.model_id,
+            model=settings.resolved_model_path(),
             dim=settings.embedding_dim,
             model_loaded=embedder.is_loaded,
             use_stub=settings.use_stub,

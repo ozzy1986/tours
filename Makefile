@@ -30,8 +30,11 @@ api:
 web:
 	cd apps/web && npm run dev
 
+embeddings-model:
+	powershell -ExecutionPolicy Bypass -File services/embeddings/scripts/install-local-model.ps1
+
 embeddings:
-	cd services/embeddings && uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
+	cd services/embeddings && .venv/Scripts/python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8001 --reload
 
 up:
 	docker compose up -d --build

@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import logging
+import os
 import threading
+from pathlib import Path
 from typing import Protocol
 
 from .config import settings
@@ -38,13 +40,25 @@ class SentenceTransformerEmbedder:
         with self._lock:
             if self._model is not None:
                 return
-            logger.info("Loading model %s", self.model_id)
+            model_path = settings.resolved_model_path()
+            local_only = Path(model_path).is_dir()
+            logger.info(
+                "Loading model %s (local_files_only=%s)",
+                model_path,
+                local_only,
+            )
             # Imported here to keep CLI startup fast and let tests stub before import
             from sentence_transformers import SentenceTransformer
 
-            self._model = SentenceTransformer(self.model_id)
+            if local_only:
+                os.environ.setdefault("HF_HUB_OFFLINE", "1")
+
+            self._model = SentenceTransformer(
+                model_path,
+                local_files_only=local_only,
+            )
             self._model.max_seq_length = 512
-            logger.info("Model %s loaded", self.model_id)
+            logger.info("Model %s loaded", model_path)
 
     def embed(self, texts: list[str], prefix: str = "passage") -> list[list[float]]:
         self._load()

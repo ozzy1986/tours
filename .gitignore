@@ -60,7 +60,8 @@ services/embeddings/__pycache__/
 services/embeddings/**/__pycache__/
 services/embeddings/.pytest_cache/
 services/embeddings/.mypy_cache/
-services/embeddings/models/
+services/embeddings/models/*
+!services/embeddings/models/.gitkeep
 
 # Docker volumes
 docker/data/

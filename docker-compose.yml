@@ -32,11 +32,12 @@ services:
     environment:
       HOST: 0.0.0.0
       PORT: 8001
-      USE_STUB: "true"
-      MODEL_ID: intfloat/multilingual-e5-small
+      USE_STUB: "false"
+      MODEL_ID: models/intfloat-multilingual-e5-small
       EMBEDDING_DIM: "384"
+      HF_HUB_OFFLINE: "1"
     volumes:
-      - models-cache:/root/.cache/huggingface
+      - ./services/embeddings/models:/app/models:ro
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8001/healthz || exit 1"]
       interval: 10s
@@ -126,4 +127,3 @@ services:
 
 volumes:
   db-data:
-  models-cache:
